@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Remaining Warmth</title>
+    <!-- PeerJS for free peer-to-peer multiplayer networking -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+        body {
+            background-color: #0b0d12;
+            color: #ecefe6;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Frost Overlay Visual Effect */
+        #frost-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none;
+            box-shadow: inset 0 0 100px rgba(0, 150, 255, 0);
+            transition: box-shadow 0.3s ease;
+            z-index: 10;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px;
+            border-radius: 16px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            z-index: 1;
+        }
+
+        h1 { font-size: 1.6rem; margin-bottom: 8px; letter-spacing: 1px; }
+        p.subtitle { font-size: 0.85rem; color: #8a919e; margin-bottom: 20px; line-height: 1.4; }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.4);
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #2a3240;
+            color: #fff;
+            margin-bottom: 8px;
+            transition: all 0.2s;
+        }
+        button:active { transform: scale(0.98); }
+        button.primary { background: #3b82f6; }
+        button.hold-btn {
+            background: #ef4444;
+            height: 120px;
+            font-size: 1.2rem;
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+            margin-top: 15px;
+        }
+        button.hold-btn:active, button.hold-btn.active {
+            background: #dc2626;
+            box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
+        }
+
+        .status-box {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+        }
+        .temp-display { font-size: 2.8rem; font-weight: bold; color: #60a5fa; margin: 10px 0; }
+        .timer { font-size: 1.2rem; color: #eab308; margin-bottom: 10px; font-weight: bold; }
+        .partner-status { font-size: 0.85rem; color: #9ca3af; font-style: italic; line-height: 1.3; }
+
+        .hidden { display: none !important; }
+        .warning-text { color: #f87171; font-size: 0.8rem; margin-top: 8px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div id="frost-overlay"></div>
+
+<div class="container">
+    <!-- 1. Lobby Interface -->
+    <div id="lobby">
+        <h1>The Remaining Warmth</h1>
+        <p class="subtitle">Rule: Heat can be transferred.<br>If either person collapses, rescue fails.</p>
+        
+        <input type="text" id="room-id-input" placeholder="Room Code (e.g. 1234)">
+        <button class="primary" onclick="createRoom()">Create Room (Player A)</button>
+        <button onclick="joinRoom()">Join Room (Player B)</button>
+        <p id="lobby-status" style="margin-top: 10px; font-size: 0.8rem; color: #888;"></p>
+    </div>
+
+    <!-- 2. Gameplay Interface -->
+    <div id="game" class="hidden">
+        <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
+        
+        <div class="status-box">
+            <div>Your Temperature</div>
+            <div class="temp-display"><span id="my-temp">--.-</span> °F</div>
+            <div class="partner-status" id="partner-obs">Partner status: Observing...</div>
+        </div>
+
+        <!-- Player A's Controls -->
+        <div id="player-a-controls" class="hidden">
+            <p class="warning-text">⚠️ Hold hands in real life while pressing the button below</p>
+            <button id="hold-button" class="hold-btn">Hold: Transfer Heat 🤝</button>
+        </div>
+
+        <!-- Player B's Info -->
+        <div id="player-b-controls" class="hidden">
+            <p class="partner-status">You cannot transfer warmth yourself. Use eye contact or body language to signal Player A.</p>
+        </div>
+    </div>
+
+    <!-- 3. Game Over Screen -->
+    <div id="game-over" class="hidden">
+        <h1 id="end-title">Game Over</h1>
+        <p id="end-desc" style="margin: 20px 0; font-size: 1.1rem; line-height: 1.5;"></p>
+        <button class="primary" onclick="location.reload()">Restart</button>
+    </div>
+</div>
+
+<script>
+    let peer = null;
+    let conn = null;
+    let isPlayerA = false;
+    
+    // Game variables
+    let myTemp = 98.6;
+    let partnerTemp = 87.0; // Initial low temperature for Player B
+    let timeLeft = 60;      // 60-second timer
+    let isTransferring = false;
+    let gameInterval = null;
+
+    // Create Room (Player A)
+    function createRoom() {
+        const roomId = document.getElementById('room-id-input').value.trim();
+        if (!roomId) return alert("Please enter a room code!");
+
+        document.getElementById('lobby-status').innerText = "Creating room...";
+        peer = new Peer('cold-room-' + roomId);
+
+        peer.on('open', (id) => {
+            document.getElementById('lobby-status').innerText = "Waiting for Player B to join...";
+            isPlayerA = true;
+            // Player A starts with higher temp (Random 96.5 ~ 98.5)
+            myTemp = parseFloat((96.5 + Math.random() * 2).toFixed(1));
+        });
+
+        peer.on('connection', (c) => {
+            conn = c;
+            setupConnection();
+            // Player B starts with critically low temp (Random 85.5 ~ 87.5)
+            partnerTemp = parseFloat((85.5 + Math.random() * 2).toFixed(1));
+            startGame();
+        });
+
+        peer.on('error', (err) => alert("Failed to create room. Room code might be taken: " + err));
+    }
+
+    // Join Room (Player B)
+    function joinRoom() {
+        const roomId = document.getElementById('room-id-input').value.trim();
+        if (!roomId) return alert("Please enter a room code!");
+
+        document.getElementById('lobby-status').innerText = "Joining room...";
+        peer = new Peer();
+
+        peer.on('open', () => {
+            conn = peer.connect('cold-room-' + roomId);
+            isPlayerA = false;
+            setupConnection();
+        });
+
+        peer.on('error', (err) => alert("Failed to join. Check if the room code is correct."));
+    }
+
+    // Setup Network Connection
+    function setupConnection() {
+        conn.on('open', () => {
+            if(!isPlayerA) startGame();
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'SYNC') {
+                if (data.isTransferring !== undefined) isTransferring = data.isTransferring;
+            } else if (data.type === 'GAME_OVER') {
+                endGame(data.reason, false);
+            }
+        });
+    }
+
+    // Start Game
+    function startGame() {
+        document.getElementById('lobby').classList.add('hidden');
+        document.getElementById('game').classList.remove('hidden');
+
+        if (isPlayerA) {
+            document.getElementById('player-a-controls').classList.remove('hidden');
+            setupAControls();
+        } else {
+            document.getElementById('player-b-controls').classList.remove('hidden');
+            myTemp = partnerTemp; // Player B gets the lower temp
+        }
+
+        // Main game loop (runs every second)
+        gameInterval = setInterval(gameLoop, 1000);
+    }
+
+    // Setup Player A Hold Controls
+    function setupAControls() {
+        const btn = document.getElementById('hold-button');
+        
+        const startTransfer = (e) => {
+            e.preventDefault();
+            isTransferring = true;
+            btn.classList.add('active');
+            conn.send({ type: 'SYNC', isTransferring: true });
+        };
+
+        const stopTransfer = (e) => {
+            e.preventDefault();
+            isTransferring = false;
+            btn.classList.remove('active');
+            conn.send({ type: 'SYNC', isTransferring: false });
+        };
+
+        btn.addEventListener('mousedown', startTransfer);
+        btn.addEventListener('mouseup', stopTransfer);
+        btn.addEventListener('touchstart', startTransfer);
+        btn.addEventListener('touchend', stopTransfer);
+    }
+
+    // Main Game Loop
+    function gameLoop() {
+        timeLeft--;
+        document.getElementById('time-left').innerText = timeLeft;
+
+        // 1. Natural temperature decay (Freezing environment: -0.25°F/s)
+        myTemp = parseFloat((myTemp - 0.25).toFixed(1));
+
+        // 2. Heat transfer logic
+        if (isTransferring) {
+            if (isPlayerA) {
+                myTemp = parseFloat((myTemp - 0.55).toFixed(1)); // Player A drains heat
+            } else {
+                myTemp = parseFloat((myTemp + 0.65).toFixed(1)); // Player B gains heat
+            }
+        }
+
+        // 3. UI and Visual Updates
+        document.getElementById('my-temp').innerText = myTemp.toFixed(1);
+        updateFrostUI(myTemp);
+        updatePartnerObservation(myTemp);
+
+        // 4. Win/Loss Conditions (If anyone drops <= 80.0°F, whole team fails)
+        if (myTemp <= 80.0) {
+            const failReason = isPlayerA ? 
+                "❌ Rescue Failed\nPlayer A collapsed from hypothermia..." : 
+                "❌ Rescue Failed\nPlayer B collapsed from hypothermia...";
+            
+            conn.send({ type: 'GAME_OVER', reason: failReason });
+            endGame(failReason, false);
+        } else if (timeLeft <= 0) {
+            // Surviving 60 seconds with both players conscious = Victory
+            endGame("🎉 Rescue Success!\nBoth of you survived by sharing body heat!", true);
+        }
+    }
+
+    // Update Frost Screen Effect
+    function updateFrostUI(temp) {
+        const overlay = document.getElementById('frost-overlay');
+        if (temp < 90) {
+            let severity = (90 - temp) * 10;
+            overlay.style.boxShadow = `inset 0 0 ${severity * 2}px rgba(0, 150, 255, ${severity/100})`;
+        } else {
+            overlay.style.boxShadow = `inset 0 0 0px rgba(0, 0, 0, 0)`;
+        }
+    }
+
+    // Update Non-Verbal Physical Observation
+    function updatePartnerObservation(temp) {
+        const obs = document.getElementById('partner-obs');
+        if (isTransferring) {
+            obs.innerText = "Partner status: Holding hands tightly, heat is flowing to Player B...";
+            obs.style.color = "#ef4444";
+        } else {
+            if (temp < 84) obs.innerText = "Partner status: Pale face, losing consciousness...";
+            else if (temp < 89) obs.innerText = "Partner status: Blue lips, shivering violently...";
+            else if (temp < 93) obs.innerText = "Partner status: Shivering, breathing heavily...";
+            else obs.innerText = "Partner status: Temporarily calm...";
+            obs.style.color = "#9ca3af";
+        }
+    }
+
+    // End Game Screen
+    function endGame(reason, isSuccess) {
+        clearInterval(gameInterval);
+        document.getElementById('game').classList.add('hidden');
+        document.getElementById('game-over').classList.remove('hidden');
+        
+        document.getElementById('end-title').innerText = isSuccess ? "VICTORY" : "FAILURE";
+        document.getElementById('end-title').style.color = isSuccess ? "#4ade80" : "#f87171";
+        document.getElementById('end-desc').innerText = reason;
+    }
+</script>
+
+</body>
+</html>
