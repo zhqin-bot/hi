@@ -151,11 +151,22 @@
     
     // Game variables
     let myTemp = 98.6;
-    let partnerTemp = 87.0; // Initial low temperature for Player B
-    let timeLeft = 60;      // 60-second timer
+    let partnerTemp = 87.0; 
+    let timeLeft = 60;      
     let isTransferring = false;
     let gameInterval = null;
     let gameStarted = false;
+
+    // 配置公共 STUN 服务器解决跨网络穿透问题
+    const peerConfig = {
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        }
+    };
 
     // Create Room (Player A)
     function createRoom() {
@@ -163,7 +174,7 @@
         if (!roomId) return alert("Please enter a room code!");
 
         document.getElementById('lobby-status').innerText = "Creating room...";
-        peer = new Peer('cold-room-' + roomId);
+        peer = new Peer('cold-room-' + roomId, peerConfig);
 
         peer.on('open', (id) => {
             document.getElementById('lobby-status').innerText = "Waiting for Player B to join...";
@@ -175,15 +186,9 @@
             conn = c;
             partnerTemp = parseFloat((85.5 + Math.random() * 2).toFixed(1));
             setupConnection();
-            
-            // 关键修复：连接成功后，主动向 Player B 发送开始命令与初始温度
-            setTimeout(() => {
-                conn.send({ type: 'START', partnerTemp: partnerTemp });
-                startGame();
-            }, 500);
         });
 
-        peer.on('error', (err) => alert("Failed to create room. Code might be taken: " + err));
+        peer.on('error', (err) => alert("Error: " + err));
     }
 
     // Join Room (Player B)
@@ -191,11 +196,11 @@
         const roomId = document.getElementById('room-id-input').value.trim();
         if (!roomId) return alert("Please enter a room code!");
 
-        document.getElementById('lobby-status').innerText = "Joining room...";
-        peer = new Peer();
+        document.getElementById('lobby-status').innerText = "Connecting...";
+        peer = new Peer(peerConfig);
 
         peer.on('open', () => {
-            conn = peer.connect('cold-room-' + roomId);
+            conn = peer.connect('cold-room-' + roomId, { reliable: true });
             isPlayerA = false;
             setupConnection();
         });
@@ -203,12 +208,26 @@
         peer.on('error', (err) => alert("Failed to join. Check room code."));
     }
 
-    // Setup Network Connection
+    // Setup Connection & Heartbeat
     function setupConnection() {
+        conn.on('open', () => {
+            document.getElementById('lobby-status').innerText = "Connected! Starting...";
+            
+            if (isPlayerA) {
+                // 定时广播开始信号，防止数据包丢包
+                let syncInterval = setInterval(() => {
+                    if (gameStarted) {
+                        clearInterval(syncInterval);
+                        return;
+                    }
+                    conn.send({ type: 'START', partnerTemp: partnerTemp });
+                }, 300);
+            }
+        });
+
         conn.on('data', (data) => {
             if (data.type === 'START') {
-                // 关键修复：Player B 接收到 Player A 发来的 START 信号后立刻强制开启游戏
-                myTemp = data.partnerTemp;
+                if (!isPlayerA) myTemp = data.partnerTemp;
                 startGame();
             } else if (data.type === 'SYNC') {
                 if (data.isTransferring !== undefined) isTransferring = data.isTransferring;
@@ -233,11 +252,10 @@
             document.getElementById('player-b-controls').classList.remove('hidden');
         }
 
-        // Main game loop (runs every second)
         gameInterval = setInterval(gameLoop, 1000);
     }
 
-    // Setup Player A Hold Controls
+    // Controls
     function setupAControls() {
         const btn = document.getElementById('hold-button');
         
@@ -245,14 +263,14 @@
             e.preventDefault();
             isTransferring = true;
             btn.classList.add('active');
-            conn.send({ type: 'SYNC', isTransferring: true });
+            if (conn && conn.open) conn.send({ type: 'SYNC', isTransferring: true });
         };
 
         const stopTransfer = (e) => {
             e.preventDefault();
             isTransferring = false;
             btn.classList.remove('active');
-            conn.send({ type: 'SYNC', isTransferring: false });
+            if (conn && conn.open) conn.send({ type: 'SYNC', isTransferring: false });
         };
 
         btn.addEventListener('mousedown', startTransfer);
@@ -278,7 +296,7 @@
             }
         }
 
-        // 3. UI and Visual Updates
+        // 3. UI Updates
         document.getElementById('my-temp').innerText = myTemp.toFixed(1);
         updateFrostUI(myTemp);
         updatePartnerObservation(myTemp);
@@ -289,14 +307,13 @@
                 "❌ Rescue Failed\nPlayer A collapsed from hypothermia..." : 
                 "❌ Rescue Failed\nPlayer B collapsed from hypothermia...";
             
-            conn.send({ type: 'GAME_OVER', reason: failReason });
+            if (conn && conn.open) conn.send({ type: 'GAME_OVER', reason: failReason });
             endGame(failReason, false);
         } else if (timeLeft <= 0) {
             endGame("🎉 Rescue Success!\nBoth of you survived by sharing body heat!", true);
         }
     }
 
-    // Update Frost Screen Effect
     function updateFrostUI(temp) {
         const overlay = document.getElementById('frost-overlay');
         if (temp < 90) {
@@ -307,7 +324,6 @@
         }
     }
 
-    // Update Non-Verbal Physical Observation
     function updatePartnerObservation(temp) {
         const obs = document.getElementById('partner-obs');
         if (isTransferring) {
@@ -322,7 +338,6 @@
         }
     }
 
-    // End Game Screen
     function endGame(reason, isSuccess) {
         clearInterval(gameInterval);
         document.getElementById('game').classList.add('hidden');
