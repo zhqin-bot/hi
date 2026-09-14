@@ -155,6 +155,7 @@
     let timeLeft = 60;      // 60-second timer
     let isTransferring = false;
     let gameInterval = null;
+    let gameStarted = false;
 
     // Create Room (Player A)
     function createRoom() {
@@ -167,19 +168,22 @@
         peer.on('open', (id) => {
             document.getElementById('lobby-status').innerText = "Waiting for Player B to join...";
             isPlayerA = true;
-            // Player A starts with higher temp (Random 96.5 ~ 98.5)
             myTemp = parseFloat((96.5 + Math.random() * 2).toFixed(1));
         });
 
         peer.on('connection', (c) => {
             conn = c;
-            setupConnection();
-            // Player B starts with critically low temp (Random 85.5 ~ 87.5)
             partnerTemp = parseFloat((85.5 + Math.random() * 2).toFixed(1));
-            startGame();
+            setupConnection();
+            
+            // 关键修复：连接成功后，主动向 Player B 发送开始命令与初始温度
+            setTimeout(() => {
+                conn.send({ type: 'START', partnerTemp: partnerTemp });
+                startGame();
+            }, 500);
         });
 
-        peer.on('error', (err) => alert("Failed to create room. Room code might be taken: " + err));
+        peer.on('error', (err) => alert("Failed to create room. Code might be taken: " + err));
     }
 
     // Join Room (Player B)
@@ -196,17 +200,17 @@
             setupConnection();
         });
 
-        peer.on('error', (err) => alert("Failed to join. Check if the room code is correct."));
+        peer.on('error', (err) => alert("Failed to join. Check room code."));
     }
 
     // Setup Network Connection
     function setupConnection() {
-        conn.on('open', () => {
-            if(!isPlayerA) startGame();
-        });
-
         conn.on('data', (data) => {
-            if (data.type === 'SYNC') {
+            if (data.type === 'START') {
+                // 关键修复：Player B 接收到 Player A 发来的 START 信号后立刻强制开启游戏
+                myTemp = data.partnerTemp;
+                startGame();
+            } else if (data.type === 'SYNC') {
                 if (data.isTransferring !== undefined) isTransferring = data.isTransferring;
             } else if (data.type === 'GAME_OVER') {
                 endGame(data.reason, false);
@@ -216,6 +220,9 @@
 
     // Start Game
     function startGame() {
+        if (gameStarted) return;
+        gameStarted = true;
+
         document.getElementById('lobby').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
 
@@ -224,7 +231,6 @@
             setupAControls();
         } else {
             document.getElementById('player-b-controls').classList.remove('hidden');
-            myTemp = partnerTemp; // Player B gets the lower temp
         }
 
         // Main game loop (runs every second)
@@ -260,15 +266,15 @@
         timeLeft--;
         document.getElementById('time-left').innerText = timeLeft;
 
-        // 1. Natural temperature decay (Freezing environment: -0.25°F/s)
+        // 1. Natural temperature decay (-0.25°F/s)
         myTemp = parseFloat((myTemp - 0.25).toFixed(1));
 
         // 2. Heat transfer logic
         if (isTransferring) {
             if (isPlayerA) {
-                myTemp = parseFloat((myTemp - 0.55).toFixed(1)); // Player A drains heat
+                myTemp = parseFloat((myTemp - 0.55).toFixed(1));
             } else {
-                myTemp = parseFloat((myTemp + 0.65).toFixed(1)); // Player B gains heat
+                myTemp = parseFloat((myTemp + 0.65).toFixed(1));
             }
         }
 
@@ -277,7 +283,7 @@
         updateFrostUI(myTemp);
         updatePartnerObservation(myTemp);
 
-        // 4. Win/Loss Conditions (If anyone drops <= 80.0°F, whole team fails)
+        // 4. Win/Loss Conditions
         if (myTemp <= 80.0) {
             const failReason = isPlayerA ? 
                 "❌ Rescue Failed\nPlayer A collapsed from hypothermia..." : 
@@ -286,7 +292,6 @@
             conn.send({ type: 'GAME_OVER', reason: failReason });
             endGame(failReason, false);
         } else if (timeLeft <= 0) {
-            // Surviving 60 seconds with both players conscious = Victory
             endGame("🎉 Rescue Success!\nBoth of you survived by sharing body heat!", true);
         }
     }
