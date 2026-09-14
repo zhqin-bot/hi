@@ -2,10 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Remaining Warmth</title>
-    <!-- PeerJS for free peer-to-peer multiplayer networking -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body {
@@ -31,32 +29,20 @@
 
         .container {
             width: 90%;
-            max-width: 400px;
+            max-width: 420px;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 24px;
+            padding: 20px;
             border-radius: 16px;
             text-align: center;
             backdrop-filter: blur(10px);
             z-index: 1;
         }
 
-        h1 { font-size: 1.6rem; margin-bottom: 8px; letter-spacing: 1px; }
+        h1 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 1px; }
         p.subtitle { font-size: 0.85rem; color: #8a919e; margin-bottom: 20px; line-height: 1.4; }
 
-        input {
-            width: 100%;
-            padding: 12px;
-            background: rgba(0,0,0,0.4);
-            border: 1px solid #333;
-            color: #fff;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 1.1rem;
-            margin-bottom: 12px;
-        }
-
-        button {
+        button.primary-btn {
             width: 100%;
             padding: 14px;
             border: none;
@@ -64,38 +50,54 @@
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            background: #2a3240;
+            background: #3b82f6;
             color: #fff;
-            margin-bottom: 8px;
             transition: all 0.2s;
         }
-        button:active { transform: scale(0.98); }
-        button.primary { background: #3b82f6; }
+
+        .timer { font-size: 1.2rem; color: #eab308; margin-bottom: 12px; font-weight: bold; }
+
+        /* Shared Local Screen Display */
+        .players-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .player-card {
+            background: rgba(0,0,0,0.4);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .player-title { font-size: 0.9rem; font-weight: bold; color: #9ca3af; margin-bottom: 6px; }
+        .temp-display { font-size: 1.8rem; font-weight: bold; color: #60a5fa; margin: 6px 0; }
+        .temp-masked { font-size: 1.2rem; color: #ef4444; font-weight: bold; padding: 8px 0; }
+
+        .partner-status { font-size: 0.75rem; color: #9ca3af; font-style: italic; min-height: 36px; line-height: 1.2; }
+
         button.hold-btn {
+            width: 100%;
             background: #ef4444;
-            height: 120px;
-            font-size: 1.2rem;
+            height: 100px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+            border: none;
             border-radius: 16px;
             box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
-            margin-top: 15px;
+            margin-top: 10px;
+            cursor: pointer;
         }
         button.hold-btn:active, button.hold-btn.active {
             background: #dc2626;
             box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
         }
 
-        .status-box {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 12px;
-            margin: 15px 0;
-        }
-        .temp-display { font-size: 2.8rem; font-weight: bold; color: #60a5fa; margin: 10px 0; }
-        .timer { font-size: 1.2rem; color: #eab308; margin-bottom: 10px; font-weight: bold; }
-        .partner-status { font-size: 0.85rem; color: #9ca3af; font-style: italic; line-height: 1.3; }
-
         .hidden { display: none !important; }
-        .warning-text { color: #f87171; font-size: 0.8rem; margin-top: 8px; font-weight: 500; }
+        .warning-text { color: #f87171; font-size: 0.8rem; margin-top: 10px; font-weight: 500; line-height: 1.3; }
     </style>
 </head>
 <body>
@@ -103,159 +105,64 @@
 <div id="frost-overlay"></div>
 
 <div class="container">
-    <!-- 1. Lobby Interface -->
+    <!-- 1. Start Screen -->
     <div id="lobby">
         <h1>The Remaining Warmth</h1>
-        <p class="subtitle">Rule: Heat can be transferred.<br>If either person collapses, rescue fails.</p>
-        
-        <input type="text" id="room-id-input" placeholder="Room Code (e.g. 1234)">
-        <button class="primary" onclick="createRoom()">Create Room (Player A)</button>
-        <button onclick="joinRoom()">Join Room (Player B)</button>
-        <p id="lobby-status" style="margin-top: 10px; font-size: 0.8rem; color: #888;"></p>
+        <p class="subtitle">
+            <b>Rule:</b> Heat can be transferred.<br>
+            If either player collapses, rescue fails.<br><br>
+            <i>Place this phone between Player A and Player B.</i>
+        </p>
+        <button class="primary-btn" onclick="startGame()">Start Prototype</button>
     </div>
 
-    <!-- 2. Gameplay Interface -->
+    <!-- 2. Single-Screen Local Gameplay -->
     <div id="game" class="hidden">
         <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
         
-        <div class="status-box">
-            <div>Your Temperature</div>
-            <div class="temp-display"><span id="my-temp">--.-</span> °F</div>
-            <div class="partner-status" id="partner-obs">Partner status: Observing...</div>
+        <div class="players-grid">
+            <!-- Player A View -->
+            <div class="player-card">
+                <div class="player-title">PLAYER A</div>
+                <div class="temp-display"><span id="p1-temp">98.6</span>°F</div>
+                <div class="partner-status" id="p1-obs">Observing Player B...</div>
+            </div>
+
+            <!-- Player B View (Temperature Hidden to Player A) -->
+            <div class="player-card">
+                <div class="player-title">PLAYER B</div>
+                <div class="temp-masked">STATUS UNKNOWN</div>
+                <div class="partner-status" id="p2-obs">Breathing heavily...</div>
+            </div>
         </div>
 
-        <!-- Player A's Controls -->
-        <div id="player-a-controls" class="hidden">
-            <p class="warning-text">⚠️ Hold hands in real life while pressing the button below</p>
-            <button id="hold-button" class="hold-btn">Hold: Transfer Heat 🤝</button>
-        </div>
-
-        <!-- Player B's Info -->
-        <div id="player-b-controls" class="hidden">
-            <p class="partner-status">You cannot transfer warmth yourself. Use eye contact or body language to signal Player A.</p>
-        </div>
+        <p class="warning-text">⚠️ Player A: Hold hands with Player B in real life while pressing the button below!</p>
+        <button id="hold-button" class="hold-btn">HOLD: TRANSFER HEAT 🤝</button>
     </div>
 
     <!-- 3. Game Over Screen -->
     <div id="game-over" class="hidden">
         <h1 id="end-title">Game Over</h1>
-        <p id="end-desc" style="margin: 20px 0; font-size: 1.1rem; line-height: 1.5;"></p>
-        <button class="primary" onclick="location.reload()">Restart</button>
+        <p id="end-desc" style="margin: 20px 0; font-size: 1rem; line-height: 1.5;"></p>
+        <button class="primary-btn" onclick="location.reload()">Restart Prototype</button>
     </div>
 </div>
 
 <script>
-    let peer = null;
-    let conn = null;
-    let isPlayerA = false;
-    
-    // Game variables
-    let myTemp = 98.6;
-    let partnerTemp = 87.0; 
-    let timeLeft = 60;      
+    let p1Temp = 97.8;
+    let p2Temp = 86.5; // Player B starts critically cold
+    let timeLeft = 60;
     let isTransferring = false;
     let gameInterval = null;
-    let gameStarted = false;
 
-    // 配置公共 STUN 服务器解决跨网络穿透问题
-    const peerConfig = {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' }
-            ]
-        }
-    };
-
-    // Create Room (Player A)
-    function createRoom() {
-        const roomId = document.getElementById('room-id-input').value.trim();
-        if (!roomId) return alert("Please enter a room code!");
-
-        document.getElementById('lobby-status').innerText = "Creating room...";
-        peer = new Peer('cold-room-' + roomId, peerConfig);
-
-        peer.on('open', (id) => {
-            document.getElementById('lobby-status').innerText = "Waiting for Player B to join...";
-            isPlayerA = true;
-            myTemp = parseFloat((96.5 + Math.random() * 2).toFixed(1));
-        });
-
-        peer.on('connection', (c) => {
-            conn = c;
-            partnerTemp = parseFloat((85.5 + Math.random() * 2).toFixed(1));
-            setupConnection();
-        });
-
-        peer.on('error', (err) => alert("Error: " + err));
-    }
-
-    // Join Room (Player B)
-    function joinRoom() {
-        const roomId = document.getElementById('room-id-input').value.trim();
-        if (!roomId) return alert("Please enter a room code!");
-
-        document.getElementById('lobby-status').innerText = "Connecting...";
-        peer = new Peer(peerConfig);
-
-        peer.on('open', () => {
-            conn = peer.connect('cold-room-' + roomId, { reliable: true });
-            isPlayerA = false;
-            setupConnection();
-        });
-
-        peer.on('error', (err) => alert("Failed to join. Check room code."));
-    }
-
-    // Setup Connection & Heartbeat
-    function setupConnection() {
-        conn.on('open', () => {
-            document.getElementById('lobby-status').innerText = "Connected! Starting...";
-            
-            if (isPlayerA) {
-                // 定时广播开始信号，防止数据包丢包
-                let syncInterval = setInterval(() => {
-                    if (gameStarted) {
-                        clearInterval(syncInterval);
-                        return;
-                    }
-                    conn.send({ type: 'START', partnerTemp: partnerTemp });
-                }, 300);
-            }
-        });
-
-        conn.on('data', (data) => {
-            if (data.type === 'START') {
-                if (!isPlayerA) myTemp = data.partnerTemp;
-                startGame();
-            } else if (data.type === 'SYNC') {
-                if (data.isTransferring !== undefined) isTransferring = data.isTransferring;
-            } else if (data.type === 'GAME_OVER') {
-                endGame(data.reason, false);
-            }
-        });
-    }
-
-    // Start Game
     function startGame() {
-        if (gameStarted) return;
-        gameStarted = true;
-
         document.getElementById('lobby').classList.add('hidden');
         document.getElementById('game').classList.remove('hidden');
 
-        if (isPlayerA) {
-            document.getElementById('player-a-controls').classList.remove('hidden');
-            setupAControls();
-        } else {
-            document.getElementById('player-b-controls').classList.remove('hidden');
-        }
-
+        setupAControls();
         gameInterval = setInterval(gameLoop, 1000);
     }
 
-    // Controls
     function setupAControls() {
         const btn = document.getElementById('hold-button');
         
@@ -263,14 +170,12 @@
             e.preventDefault();
             isTransferring = true;
             btn.classList.add('active');
-            if (conn && conn.open) conn.send({ type: 'SYNC', isTransferring: true });
         };
 
         const stopTransfer = (e) => {
             e.preventDefault();
             isTransferring = false;
             btn.classList.remove('active');
-            if (conn && conn.open) conn.send({ type: 'SYNC', isTransferring: false });
         };
 
         btn.addEventListener('mousedown', startTransfer);
@@ -279,62 +184,63 @@
         btn.addEventListener('touchend', stopTransfer);
     }
 
-    // Main Game Loop
     function gameLoop() {
         timeLeft--;
         document.getElementById('time-left').innerText = timeLeft;
 
         // 1. Natural temperature decay (-0.25°F/s)
-        myTemp = parseFloat((myTemp - 0.25).toFixed(1));
+        p1Temp = parseFloat((p1Temp - 0.25).toFixed(1));
+        p2Temp = parseFloat((p2Temp - 0.25).toFixed(1));
 
         // 2. Heat transfer logic
         if (isTransferring) {
-            if (isPlayerA) {
-                myTemp = parseFloat((myTemp - 0.55).toFixed(1));
-            } else {
-                myTemp = parseFloat((myTemp + 0.65).toFixed(1));
-            }
+            p1Temp = parseFloat((p1Temp - 0.55).toFixed(1)); // Player A loses heat
+            p2Temp = parseFloat((p2Temp + 0.65).toFixed(1)); // Player B gains heat
         }
 
         // 3. UI Updates
-        document.getElementById('my-temp').innerText = myTemp.toFixed(1);
-        updateFrostUI(myTemp);
-        updatePartnerObservation(myTemp);
+        document.getElementById('p1-temp').innerText = p1Temp.toFixed(1);
+        updateFrostUI(Math.min(p1Temp, p2Temp));
+        updateObservations();
 
         // 4. Win/Loss Conditions
-        if (myTemp <= 80.0) {
-            const failReason = isPlayerA ? 
-                "❌ Rescue Failed\nPlayer A collapsed from hypothermia..." : 
-                "❌ Rescue Failed\nPlayer B collapsed from hypothermia...";
-            
-            if (conn && conn.open) conn.send({ type: 'GAME_OVER', reason: failReason });
-            endGame(failReason, false);
+        if (p1Temp <= 80.0) {
+            endGame("❌ RESCUE FAILED\nPlayer A collapsed from hypothermia!", false);
+        } else if (p2Temp <= 80.0) {
+            endGame("❌ RESCUE FAILED\nPlayer B collapsed from hypothermia!", false);
         } else if (timeLeft <= 0) {
-            endGame("🎉 Rescue Success!\nBoth of you survived by sharing body heat!", true);
+            endGame("🎉 RESCUE SUCCESS!\nBoth players survived by sharing body heat!", true);
         }
     }
 
-    function updateFrostUI(temp) {
+    function updateFrostUI(lowestTemp) {
         const overlay = document.getElementById('frost-overlay');
-        if (temp < 90) {
-            let severity = (90 - temp) * 10;
+        if (lowestTemp < 90) {
+            let severity = (90 - lowestTemp) * 10;
             overlay.style.boxShadow = `inset 0 0 ${severity * 2}px rgba(0, 150, 255, ${severity/100})`;
         } else {
             overlay.style.boxShadow = `inset 0 0 0px rgba(0, 0, 0, 0)`;
         }
     }
 
-    function updatePartnerObservation(temp) {
-        const obs = document.getElementById('partner-obs');
+    function updateObservations() {
+        const p1Obs = document.getElementById('p1-obs');
+        const p2Obs = document.getElementById('p2-obs');
+
         if (isTransferring) {
-            obs.innerText = "Partner status: Holding hands tightly, heat is flowing to Player B...";
-            obs.style.color = "#ef4444";
+            p1Obs.innerText = "Holding hands... Transferring heat to Player B.";
+            p1Obs.style.color = "#ef4444";
+            p2Obs.innerText = "Receiving heat from Player A...";
+            p2Obs.style.color = "#ef4444";
         } else {
-            if (temp < 84) obs.innerText = "Partner status: Pale face, losing consciousness...";
-            else if (temp < 89) obs.innerText = "Partner status: Blue lips, shivering violently...";
-            else if (temp < 93) obs.innerText = "Partner status: Shivering, breathing heavily...";
-            else obs.innerText = "Partner status: Temporarily calm...";
-            obs.style.color = "#9ca3af";
+            p1Obs.style.color = "#9ca3af";
+            p2Obs.style.color = "#9ca3af";
+            p1Obs.innerText = p1Temp < 88 ? "You are shivering violently!" : "Holding out...";
+
+            if (p2Temp < 83) p2Obs.innerText = "Player B is pale and losing consciousness!";
+            else if (p2Temp < 87) p2Obs.innerText = "Player B's lips are blue, shivering uncontrollably!";
+            else if (p2Temp < 92) p2Obs.innerText = "Player B is shivering heavily.";
+            else p2Obs.innerText = "Player B seems temporarily stable.";
         }
     }
 
