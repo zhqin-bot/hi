@@ -46,7 +46,7 @@
         }
 
         h1 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 1px; }
-        p.subtitle { font-size: 0.85rem; color: #8a919e; margin-bottom: 20px; line-height: 1.4; }
+        p.subtitle { font-size: 0.9rem; color: #8a919e; margin-bottom: 25px; line-height: 1.5; font-style: italic; }
 
         button.primary-btn {
             width: 100%;
@@ -86,35 +86,43 @@
             padding: 16px 10px;
             border-radius: 16px;
             text-align: center;
+            min-height: 160px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
         .player-tag {
             font-size: 0.8rem;
             font-weight: bold;
             letter-spacing: 1px;
-            margin-bottom: 4px;
+            margin-bottom: 6px;
         }
         .player-a-tag { color: #60a5fa; }
         .player-b-tag { color: #f472b6; }
 
-        .temp-val {
-            font-size: 2.2rem;
-            font-weight: bold;
-            color: #fff;
-            margin: 4px 0;
+        .temp-desc {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #ecefe6;
+            margin: 10px 0;
+            line-height: 1.3;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         button.hold-btn {
             width: 100%;
             background: #ef4444;
-            height: 70px;
-            font-size: 0.95rem;
+            height: 60px;
+            font-size: 0.9rem;
             font-weight: bold;
             color: #fff;
             border: none;
             border-radius: 12px;
             box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-            margin-top: 10px;
             cursor: pointer;
             line-height: 1.2;
             touch-action: none;
@@ -132,15 +140,14 @@
 <div id="frost-overlay"></div>
 
 <div class="container">
-    <!-- 1. Start Screen -->
+    <!-- 1. Start Screen (No Rules Revealed) -->
     <div id="lobby" style="margin: auto 0; text-align: center;">
         <h1>The Remaining Warmth</h1>
         <p class="subtitle">
-            <b>Rule:</b> Heat can be transferred.<br>
-            If either player collapses (&le;80°F), rescue fails.<br><br>
-            <i>Place phone between Player A and Player B.</i>
+            "You two are trapped in the extreme cold...<br>
+            Survive until help arrives."
         </p>
-        <button class="primary-btn" onclick="startGame()">Start Prototype</button>
+        <button class="primary-btn" onclick="startGame()">Begin</button>
     </div>
 
     <!-- 2. Split Screen Gameplay Area -->
@@ -149,25 +156,29 @@
         <!-- Top Status Zone -->
         <div class="header-zone">
             <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
-            <div class="status-msg" id="global-status">Natural cooling in progress...</div>
+            <div class="status-msg" id="global-status">...</div>
         </div>
 
-        <!-- Bottom Split Player Zone (Far Apart) -->
+        <!-- Bottom Split Player Zone -->
         <div class="bottom-players-wrapper">
             
             <!-- Left Side: Player A -->
             <div class="player-side">
-                <div class="player-tag player-a-tag">PLAYER A</div>
-                <div class="temp-val"><span id="p1-temp">97.8</span>°F</div>
-                <button id="hold-button" class="hold-btn">HOLD:<br>TRANSFER 🤝</button>
+                <div>
+                    <div class="player-tag player-a-tag">PLAYER A</div>
+                    <div class="temp-desc" id="p1-desc">Feeling warm...</div>
+                </div>
+                <button id="hold-button" class="hold-btn">HOLD 🤝</button>
             </div>
 
             <!-- Right Side: Player B -->
             <div class="player-side">
-                <div class="player-tag player-b-tag">PLAYER B</div>
-                <div class="temp-val"><span id="p2-temp">86.5</span>°F</div>
-                <div style="font-size: 0.75rem; color: #8a919e; margin-top: 18px; line-height: 1.2;">
-                    Receiving warmth<br>from Player A
+                <div>
+                    <div class="player-tag player-b-tag">PLAYER B</div>
+                    <div class="temp-desc" id="p2-desc">Shivering slightly...</div>
+                </div>
+                <div style="height: 60px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #6b7280;">
+                    (Passive)
                 </div>
             </div>
 
@@ -178,13 +189,14 @@
     <div id="game-over" class="hidden" style="margin: auto 0; text-align: center;">
         <h1 id="end-title">Game Over</h1>
         <p id="end-desc" style="margin: 20px 0; font-size: 1rem; line-height: 1.5;"></p>
-        <button class="primary-btn" onclick="location.reload()">Restart Prototype</button>
+        <button class="primary-btn" onclick="location.reload()">Try Again</button>
     </div>
 </div>
 
 <script>
-    let p1Temp = 97.8;
-    let p2Temp = 86.5; 
+    // Elevated starting temperatures (+5°F)
+    let p1Temp = 102.8; 
+    let p2Temp = 91.5; 
     let timeLeft = 60;
     let isTransferring = false;
     let gameInterval = null;
@@ -214,10 +226,10 @@
 
         btn.addEventListener('mousedown', startTransfer);
         btn.addEventListener('mouseup', stopTransfer);
-        btn.addEventListener('mouseleave', stopTransfer); // 防鼠标移出按钮卡死
+        btn.addEventListener('mouseleave', stopTransfer);
         btn.addEventListener('touchstart', startTransfer, { passive: false });
         btn.addEventListener('touchend', stopTransfer, { passive: false });
-        btn.addEventListener('touchcancel', stopTransfer, { passive: false }); // 防系统中断卡死
+        btn.addEventListener('touchcancel', stopTransfer, { passive: false });
     }
 
     function gameLoop() {
@@ -235,11 +247,8 @@
         }
 
         // 3. UI Updates
-        document.getElementById('p1-temp').innerText = p1Temp.toFixed(1);
-        document.getElementById('p2-temp').innerText = p2Temp.toFixed(1);
-        
+        updateDescriptions();
         updateFrostUI(Math.min(p1Temp, p2Temp));
-        updateStatusText();
 
         // 4. Win/Loss Conditions
         if (p1Temp <= 80.0) {
@@ -247,7 +256,31 @@
         } else if (p2Temp <= 80.0) {
             endGame("❌ RESCUE FAILED\nPlayer B collapsed from hypothermia!", false);
         } else if (timeLeft <= 0) {
-            endGame("🎉 RESCUE SUCCESS!\nBoth players survived by sharing body heat!", true);
+            endGame("🎉 RESCUE SUCCESS!\nBoth players survived by sharing warmth!", true);
+        }
+    }
+
+    // Dynamic state description helper
+    function getStatusDescription(temp) {
+        if (temp >= 100) return "🔥 Feverishly hot & sweating";
+        if (temp >= 95) return "😌 Warm & comfortable";
+        if (temp >= 90) return "🌬️ Chill setting in, cold hands";
+        if (temp >= 85) return "🥶 Shivering violently, lips blue";
+        if (temp >= 82) return "⚠️ Pale, limbs losing sensation!";
+        return "🚨 Fading out of consciousness...";
+    }
+
+    function updateDescriptions() {
+        document.getElementById('p1-desc').innerText = getStatusDescription(p1Temp);
+        document.getElementById('p2-desc').innerText = getStatusDescription(p2Temp);
+
+        const msg = document.getElementById('global-status');
+        if (isTransferring) {
+            msg.innerText = "🤝 Physical contact active...";
+            msg.style.color = "#ef4444";
+        } else {
+            msg.innerText = "❄️ Freezing wind continues...";
+            msg.style.color = "#9ca3af";
         }
     }
 
@@ -258,17 +291,6 @@
             overlay.style.boxShadow = `inset 0 0 ${severity * 2}px rgba(0, 150, 255, ${severity/100})`;
         } else {
             overlay.style.boxShadow = `inset 0 0 0px rgba(0, 0, 0, 0)`;
-        }
-    }
-
-    function updateStatusText() {
-        const msg = document.getElementById('global-status');
-        if (isTransferring) {
-            msg.innerText = "🔥 HEAT TRANSFER ACTIVE: Player A → Player B";
-            msg.style.color = "#ef4444";
-        } else {
-            msg.innerText = "❄️ Cold environment active. Temperatures dropping...";
-            msg.style.color = "#9ca3af";
         }
     }
 
