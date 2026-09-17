@@ -28,15 +28,20 @@
         }
 
         .container {
-            width: 90%;
-            max-width: 420px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 480px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             padding: 20px;
-            border-radius: 16px;
-            text-align: center;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
             backdrop-filter: blur(10px);
             z-index: 1;
+            position: relative;
         }
 
         h1 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 1px; }
@@ -55,49 +60,69 @@
             transition: all 0.2s;
         }
 
-        .timer { font-size: 1.2rem; color: #eab308; margin-bottom: 12px; font-weight: bold; }
-
-        /* Shared Local Screen Display */
-        .players-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 15px;
+        .header-zone {
+            width: 100%;
+            text-align: center;
         }
 
-        .player-card {
-            background: rgba(0,0,0,0.4);
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
+        .timer { font-size: 1.3rem; color: #eab308; font-weight: bold; }
+        .status-msg { font-size: 0.85rem; color: #9ca3af; margin-top: 6px; font-style: italic; min-height: 24px; }
+
+        /* Split Bottom Layout */
+        .bottom-players-wrapper {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 20px;
+            margin-top: auto;
         }
 
-        .player-title { font-size: 0.9rem; font-weight: bold; color: #9ca3af; margin-bottom: 6px; }
-        .temp-display { font-size: 1.8rem; font-weight: bold; color: #60a5fa; margin: 6px 0; }
-        .temp-masked { font-size: 1.2rem; color: #ef4444; font-weight: bold; padding: 8px 0; }
+        .player-side {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 16px 12px;
+            border-radius: 16px;
+            text-align: center;
+        }
 
-        .partner-status { font-size: 0.75rem; color: #9ca3af; font-style: italic; min-height: 36px; line-height: 1.2; }
+        .player-tag {
+            font-size: 0.8rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+        .player-a-tag { color: #60a5fa; }
+        .player-b-tag { color: #f472b6; }
+
+        .temp-val {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 4px 0;
+        }
 
         button.hold-btn {
             width: 100%;
             background: #ef4444;
-            height: 100px;
-            font-size: 1.1rem;
+            height: 70px;
+            font-size: 0.95rem;
             font-weight: bold;
             color: #fff;
             border: none;
-            border-radius: 16px;
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
             margin-top: 10px;
             cursor: pointer;
+            line-height: 1.2;
         }
         button.hold-btn:active, button.hold-btn.active {
             background: #dc2626;
-            box-shadow: 0 0 35px rgba(239, 68, 68, 0.8);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
         }
 
         .hidden { display: none !important; }
-        .warning-text { color: #f87171; font-size: 0.8rem; margin-top: 10px; font-weight: 500; line-height: 1.3; }
     </style>
 </head>
 <body>
@@ -106,42 +131,49 @@
 
 <div class="container">
     <!-- 1. Start Screen -->
-    <div id="lobby">
+    <div id="lobby" style="margin: auto 0; text-align: center;">
         <h1>The Remaining Warmth</h1>
         <p class="subtitle">
             <b>Rule:</b> Heat can be transferred.<br>
-            If either player collapses, rescue fails.<br><br>
-            <i>Place this phone between Player A and Player B.</i>
+            If either player collapses (&le;80°F), rescue fails.<br><br>
+            <i>Place phone between Player A and Player B.</i>
         </p>
         <button class="primary-btn" onclick="startGame()">Start Prototype</button>
     </div>
 
-    <!-- 2. Single-Screen Local Gameplay -->
-    <div id="game" class="hidden">
-        <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
+    <!-- 2. Split Screen Gameplay Area -->
+    <div id="game" class="hidden" style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
         
-        <div class="players-grid">
-            <!-- Player A View -->
-            <div class="player-card">
-                <div class="player-title">PLAYER A</div>
-                <div class="temp-display"><span id="p1-temp">98.6</span>°F</div>
-                <div class="partner-status" id="p1-obs">Observing Player B...</div>
-            </div>
-
-            <!-- Player B View (Temperature Hidden to Player A) -->
-            <div class="player-card">
-                <div class="player-title">PLAYER B</div>
-                <div class="temp-masked">STATUS UNKNOWN</div>
-                <div class="partner-status" id="p2-obs">Breathing heavily...</div>
-            </div>
+        <!-- Top Status Zone -->
+        <div class="header-zone">
+            <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
+            <div class="status-msg" id="global-status">Natural cooling in progress...</div>
         </div>
 
-        <p class="warning-text">⚠️ Player A: Hold hands with Player B in real life while pressing the button below!</p>
-        <button id="hold-button" class="hold-btn">HOLD: TRANSFER HEAT 🤝</button>
+        <!-- Bottom Split Player Zone (Far Apart) -->
+        <div class="bottom-players-wrapper">
+            
+            <!-- Left Side: Player A -->
+            <div class="player-side">
+                <div class="player-tag player-a-tag">PLAYER A</div>
+                <div class="temp-val"><span id="p1-temp">97.8</span>°F</div>
+                <button id="hold-button" class="hold-btn">HOLD:<br>TRANSFER 🤝</button>
+            </div>
+
+            <!-- Right Side: Player B -->
+            <div class="player-side">
+                <div class="player-tag player-b-tag">PLAYER B</div>
+                <div class="temp-val"><span id="p2-temp">86.5</span>°F</div>
+                <div style="font-size: 0.75rem; color: #8a919e; margin-top: 18px; line-height: 1.2;">
+                    Receiving warmth<br>from Player A
+                </div>
+            </div>
+
+        </div>
     </div>
 
     <!-- 3. Game Over Screen -->
-    <div id="game-over" class="hidden">
+    <div id="game-over" class="hidden" style="margin: auto 0; text-align: center;">
         <h1 id="end-title">Game Over</h1>
         <p id="end-desc" style="margin: 20px 0; font-size: 1rem; line-height: 1.5;"></p>
         <button class="primary-btn" onclick="location.reload()">Restart Prototype</button>
@@ -150,7 +182,7 @@
 
 <script>
     let p1Temp = 97.8;
-    let p2Temp = 86.5; // Player B starts critically cold
+    let p2Temp = 86.5; 
     let timeLeft = 60;
     let isTransferring = false;
     let gameInterval = null;
@@ -200,8 +232,10 @@
 
         // 3. UI Updates
         document.getElementById('p1-temp').innerText = p1Temp.toFixed(1);
+        document.getElementById('p2-temp').innerText = p2Temp.toFixed(1);
+        
         updateFrostUI(Math.min(p1Temp, p2Temp));
-        updateObservations();
+        updateStatusText();
 
         // 4. Win/Loss Conditions
         if (p1Temp <= 80.0) {
@@ -223,24 +257,14 @@
         }
     }
 
-    function updateObservations() {
-        const p1Obs = document.getElementById('p1-obs');
-        const p2Obs = document.getElementById('p2-obs');
-
+    function updateStatusText() {
+        const msg = document.getElementById('global-status');
         if (isTransferring) {
-            p1Obs.innerText = "Holding hands... Transferring heat to Player B.";
-            p1Obs.style.color = "#ef4444";
-            p2Obs.innerText = "Receiving heat from Player A...";
-            p2Obs.style.color = "#ef4444";
+            msg.innerText = "🔥 HEAT TRANSFER ACTIVE: Player A → Player B";
+            msg.style.color = "#ef4444";
         } else {
-            p1Obs.style.color = "#9ca3af";
-            p2Obs.style.color = "#9ca3af";
-            p1Obs.innerText = p1Temp < 88 ? "You are shivering violently!" : "Holding out...";
-
-            if (p2Temp < 83) p2Obs.innerText = "Player B is pale and losing consciousness!";
-            else if (p2Temp < 87) p2Obs.innerText = "Player B's lips are blue, shivering uncontrollably!";
-            else if (p2Temp < 92) p2Obs.innerText = "Player B is shivering heavily.";
-            else p2Obs.innerText = "Player B seems temporarily stable.";
+            msg.innerText = "❄️ Cold environment active. Temperatures dropping...";
+            msg.style.color = "#9ca3af";
         }
     }
 
