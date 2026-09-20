@@ -1,307 +1,433 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Remaining Warmth</title>
+    <title>极寒末日：五日领袖</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body {
-            background-color: #0b0d12;
-            color: #ecefe6;
+            background-color: #0d0f12;
+            color: #d1d5db;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            overflow: hidden;
-            touch-action: manipulation;
+            padding: 10px;
         }
 
-        /* Frost Overlay Visual Effect */
-        #frost-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            pointer-events: none;
-            box-shadow: inset 0 0 100px rgba(0, 150, 255, 0);
-            transition: box-shadow 0.3s ease;
-            z-index: 10;
-        }
-
-        .container {
-            width: 92%;
-            max-width: 480px;
-            height: 85vh;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 20px;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            align-items: center;
-            backdrop-filter: blur(10px);
-            z-index: 1;
-            position: relative;
-        }
-
-        h1 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 1px; }
-        p.subtitle { font-size: 0.9rem; color: #8a919e; margin-bottom: 25px; line-height: 1.5; font-style: italic; }
-
-        button.primary-btn {
+        .game-card {
             width: 100%;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            background: #3b82f6;
-            color: #fff;
-            transition: all 0.2s;
-        }
-
-        .header-zone {
-            width: 100%;
-            text-align: center;
-        }
-
-        .timer { font-size: 1.3rem; color: #eab308; font-weight: bold; }
-        .status-msg { font-size: 0.85rem; color: #9ca3af; margin-top: 6px; font-style: italic; min-height: 24px; }
-
-        /* Split Bottom Layout */
-        .bottom-players-wrapper {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            gap: 16px;
-            margin-top: auto;
-        }
-
-        .player-side {
-            flex: 1;
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 16px 10px;
+            max-width: 500px;
+            background: #161920;
+            border: 1px solid #2a2f3d;
             border-radius: 16px;
-            text-align: center;
-            min-height: 160px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            gap: 12px;
         }
 
-        .player-tag {
-            font-size: 0.8rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-        }
-        .player-a-tag { color: #60a5fa; }
-        .player-b-tag { color: #f472b6; }
-
-        .temp-desc {
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: #ecefe6;
-            margin: 10px 0;
-            line-height: 1.3;
-            min-height: 48px;
+        .header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
+            border-bottom: 1px solid #2a2f3d;
+            padding-bottom: 10px;
         }
 
-        button.hold-btn {
-            width: 100%;
-            background: #ef4444;
-            height: 60px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
-            cursor: pointer;
-            line-height: 1.2;
-            touch-action: none;
-        }
-        button.hold-btn:active, button.hold-btn.active {
-            background: #dc2626;
-            box-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
-        }
+        .day-title { font-size: 1.2rem; font-weight: bold; color: #f59e0b; }
+        .people-lvl { font-size: 0.85rem; color: #10b981; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 6px; }
 
+        .section-title { font-size: 0.85rem; font-weight: bold; color: #9ca3af; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* 属性条样式 */
+        .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .status-item { background: #0f1117; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222734; }
+        .status-val { font-size: 1.1rem; font-weight: bold; margin-top: 2px; }
+        .val-good { color: #10b981; }
+        .val-warn { color: #f59e0b; }
+        .val-danger { color: #ef4444; }
+
+        /* 资源展示 */
+        .resource-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #202634; padding: 10px; border-radius: 8px; text-align: center; }
+        .res-item { font-size: 0.85rem; font-weight: 500; }
+
+        /* 篝火专区 */
+        .bonfire-box { background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); padding: 10px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* 派遣管理 */
+        .dispatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .dispatch-card { background: #0f1117; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222734; }
+        .dispatch-controls { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 6px; }
+
+        /* 下属专区 */
+        .assistant-box { background: #1a202c; border: 1px solid #2d3748; padding: 10px; border-radius: 10px; }
+        .dialogue-log { background: #0f1117; padding: 8px; border-radius: 6px; font-size: 0.8rem; color: #cbd5e1; min-height: 40px; margin: 8px 0; display: flex; align-items: center; }
+
+        /* 通用按钮 */
+        button { background: #2b3548; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:active { transform: scale(0.96); }
+        button.btn-primary { background: #f59e0b; color: #000; font-weight: bold; }
+        button.btn-sm { padding: 2px 8px; font-size: 0.75rem; }
+        button.btn-action { background: #3b82f6; width: 100%; padding: 12px; font-size: 1rem; border-radius: 10px; margin-top: 5px; }
+
+        /* 弹窗及事件日志 */
+        .event-banner { background: #1e293b; border-left: 4px solid #3b82f6; padding: 10px; font-size: 0.85rem; border-radius: 4px; line-height: 1.4; }
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div id="frost-overlay"></div>
-
-<div class="container">
-    <!-- 1. Start Screen (No Rules Revealed) -->
-    <div id="lobby" style="margin: auto 0; text-align: center;">
-        <h1>The Remaining Warmth</h1>
-        <p class="subtitle">
-            "You two are trapped in the extreme cold...<br>
-            Survive until help arrives."
-        </p>
-        <button class="primary-btn" onclick="startGame()">Begin</button>
+<div class="game-card">
+    <!-- 顶部状态 -->
+    <div class="header">
+        <div>
+            <div class="day-title" id="day-display">第 1 天 / 共 5 天</div>
+            <div style="font-size: 0.75rem; color: #6b7280;">极寒末日·首领指挥部</div>
+        </div>
+        <div class="people-lvl" id="lvl-display">群众等级: Lv.1</div>
     </div>
 
-    <!-- 2. Split Screen Gameplay Area -->
-    <div id="game" class="hidden" style="width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between;">
-        
-        <!-- Top Status Zone -->
-        <div class="header-zone">
-            <div class="timer">Rescue Arrival in: <span id="time-left">60</span>s</div>
-            <div class="status-msg" id="global-status">...</div>
-        </div>
+    <!-- 今日事件日志 -->
+    <div class="event-banner" id="event-log">
+        <b>今日风雪简报：</b>游戏开始，请谨慎调配资源与人口，存活 5 天！
+    </div>
 
-        <!-- Bottom Split Player Zone -->
-        <div class="bottom-players-wrapper">
-            
-            <!-- Left Side: Player A -->
-            <div class="player-side">
-                <div>
-                    <div class="player-tag player-a-tag">PLAYER A</div>
-                    <div class="temp-desc" id="p1-desc">Feeling warm...</div>
-                </div>
-                <button id="hold-button" class="hold-btn">HOLD 🤝</button>
+    <!-- 群众指标 -->
+    <div>
+        <div class="section-title">群众状态 (危险值 &le; 20)</div>
+        <div class="status-grid">
+            <div class="status-item">
+                <div style="font-size: 0.75rem; color: #9ca3af;">🍞 饱食度</div>
+                <div class="status-val" id="fullness-val">80</div>
+                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('food')">+15 (耗10食物)</button>
             </div>
-
-            <!-- Right Side: Player B -->
-            <div class="player-side">
-                <div>
-                    <div class="player-tag player-b-tag">PLAYER B</div>
-                    <div class="temp-desc" id="p2-desc">Shivering slightly...</div>
-                </div>
-                <div style="height: 60px; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: #6b7280;">
-                    (Passive)
-                </div>
+            <div class="status-item">
+                <div style="font-size: 0.75rem; color: #9ca3af;">💊 健康度</div>
+                <div class="status-val" id="health-val">80</div>
+                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('med')">+15 (耗10药品)</button>
             </div>
-
+            <div class="status-item">
+                <div style="font-size: 0.75rem; color: #9ca3af;">😊 心情值</div>
+                <div class="status-val" id="mood-val">80</div>
+                <button class="btn-sm" style="margin-top:4px;" onclick="hostParty()">聚会 (各耗5)</button>
+            </div>
         </div>
     </div>
 
-    <!-- 3. Game Over Screen -->
-    <div id="game-over" class="hidden" style="margin: auto 0; text-align: center;">
-        <h1 id="end-title">Game Over</h1>
-        <p id="end-desc" style="margin: 20px 0; font-size: 1rem; line-height: 1.5;"></p>
-        <button class="primary-btn" onclick="location.reload()">Try Again</button>
+    <!-- 资源与篝火 -->
+    <div>
+        <div class="section-title">资源与篝火</div>
+        <div class="resource-bar" style="margin-bottom: 8px;">
+            <div class="res-item">🪵 木头: <span id="wood-val" style="color:#f59e0b;">30</span></div>
+            <div class="res-item">🍞 食物: <span id="food-val" style="color:#10b981;">30</span></div>
+            <div class="res-item">💊 药品: <span id="med-val" style="color:#3b82f6;">30</span></div>
+        </div>
+
+        <div class="bonfire-box">
+            <div>
+                <div style="font-size: 0.85rem; font-weight: bold; color: #ef4444;">🔥 中心篝火储备: <span id="bonfire-val">20</span> 块</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;" id="bonfire-need">今日消耗需求: 10 块</div>
+            </div>
+            <button onclick="addWoodToBonfire()">添加 5 木头</button>
+        </div>
     </div>
+
+    <!-- 小队派遣 -->
+    <div>
+        <div class="section-title">每日探索派遣 (剩余闲置人口: <span id="idle-pop">10</span>/10)</div>
+        <div class="dispatch-grid">
+            <div class="dispatch-card">
+                <div style="font-size: 0.8rem; font-weight: bold;">🌲 森林 (木头)</div>
+                <div class="dispatch-controls">
+                    <button class="btn-sm" onclick="changeDispatch('forest', -1)">-</button>
+                    <span id="forest-count" style="font-weight: bold;">0</span>
+                    <button class="btn-sm" onclick="changeDispatch('forest', 1)">+</button>
+                </div>
+            </div>
+            <div class="dispatch-card">
+                <div style="font-size: 0.8rem; font-weight: bold;">🏙️ 市区 (食物)</div>
+                <div class="dispatch-controls">
+                    <button class="btn-sm" onclick="changeDispatch('city', -1)">-</button>
+                    <span id="city-count" style="font-weight: bold;">0</span>
+                    <button class="btn-sm" onclick="changeDispatch('city', 1)">+</button>
+                </div>
+            </div>
+            <div class="dispatch-card">
+                <div style="font-size: 0.8rem; font-weight: bold;">🏥 医院 (药品)</div>
+                <div class="dispatch-controls">
+                    <button class="btn-sm" onclick="changeDispatch('hospital', -1)">-</button>
+                    <span id="hospital-count" style="font-weight: bold;">0</span>
+                    <button class="btn-sm" onclick="changeDispatch('hospital', 1)">+</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 助理下属管理 -->
+    <div class="assistant-box">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.85rem; font-weight: bold; color: #60a5fa;">👤 助理下属管理</div>
+            <div style="font-size: 0.75rem; color: #9ca3af;">忠诚: <span id="loyalty-val" style="color:#10b981;">60</span> | 威望: <span id="prestige-val" style="color:#f59e0b;">50</span></div>
+        </div>
+        <div class="dialogue-log" id="assistant-dialogue">"首领，今天有什么指示？"</div>
+        <div style="display: flex; gap: 6px;">
+            <button style="flex:1;" onclick="talkToAssistant()">召见交谈 (无限)</button>
+            <button style="flex:1;" id="btn-reprimand" onclick="interactAssistant('reprimand')">训斥 (忠↑威↓)</button>
+            <button style="flex:1;" id="btn-praise" onclick="interactAssistant('praise')">夸奖 (忠↓威↑)</button>
+        </div>
+    </div>
+
+    <!-- 结算按钮 -->
+    <button class="btn-action btn-primary" onclick="nextDay()">完成本日操作，进入下一天 ➔</button>
 </div>
 
 <script>
-    // Elevated starting temperatures (+5°F)
-    let p1Temp = 102.8; 
-    let p2Temp = 91.5; 
-    let timeLeft = 60;
-    let isTransferring = false;
-    let gameInterval = null;
+    // 游戏核心数据状态
+    let day = 1;
+    let peopleLvl = 1;
 
-    function startGame() {
-        document.getElementById('lobby').classList.add('hidden');
-        document.getElementById('game').classList.remove('hidden');
+    let fullness = 80;
+    let health = 80;
+    let mood = 80;
 
-        setupAControls();
-        gameInterval = setInterval(gameLoop, 1000);
+    let wood = 30;
+    let food = 30;
+    let med = 30;
+    let bonfire = 20;
+
+    let totalPeople = 10;
+    let dispatch = { forest: 0, city: 0, hospital: 0 };
+
+    let loyalty = 60;
+    let prestige = 50;
+    let dailyInteractionDone = false;
+
+    const dailyQuotes = [
+        "首领，外面的风雪越来越大了，注意保暖。",
+        "大家虽然很累，但只要您还在，我们就还有希望。",
+        "今天的物资整理工作差不多了，请您过目。",
+        "有几名群众私下讨论过您，他们都很敬佩您的果断。",
+        "篝火可千万不能灭啊，那是大家唯一的支柱。"
+    ];
+
+    // 初始化更新 UI
+    updateUI();
+
+    // 派遣调整
+    function changeDispatch(type, delta) {
+        let currentTotal = dispatch.forest + dispatch.city + dispatch.hospital;
+        if (delta > 0 && currentTotal >= totalPeople) return;
+        if (delta < 0 && dispatch[type] <= 0) return;
+
+        dispatch[type] += delta;
+        updateUI();
     }
 
-    function setupAControls() {
-        const btn = document.getElementById('hold-button');
-        
-        const startTransfer = (e) => {
-            if (e.cancelable) e.preventDefault();
-            isTransferring = true;
-            btn.classList.add('active');
-        };
-
-        const stopTransfer = (e) => {
-            if (e.cancelable) e.preventDefault();
-            isTransferring = false;
-            btn.classList.remove('active');
-        };
-
-        btn.addEventListener('mousedown', startTransfer);
-        btn.addEventListener('mouseup', stopTransfer);
-        btn.addEventListener('mouseleave', stopTransfer);
-        btn.addEventListener('touchstart', startTransfer, { passive: false });
-        btn.addEventListener('touchend', stopTransfer, { passive: false });
-        btn.addEventListener('touchcancel', stopTransfer, { passive: false });
-    }
-
-    function gameLoop() {
-        timeLeft--;
-        document.getElementById('time-left').innerText = timeLeft;
-
-        // 1. Natural temperature decay (-0.25°F/s)
-        p1Temp = parseFloat((p1Temp - 0.25).toFixed(1));
-        p2Temp = parseFloat((p2Temp - 0.25).toFixed(1));
-
-        // 2. Heat transfer logic
-        if (isTransferring) {
-            p1Temp = parseFloat((p1Temp - 0.55).toFixed(1)); // Player A loses heat
-            p2Temp = parseFloat((p2Temp + 0.65).toFixed(1)); // Player B gains heat
+    // 资源转化
+    function consumeRes(type) {
+        if (type === 'food' && food >= 10) {
+            food -= 10; fullness = Math.min(100, fullness + 15);
+        } else if (type === 'med' && med >= 10) {
+            med -= 10; health = Math.min(100, health + 15);
         }
-
-        // 3. UI Updates
-        updateDescriptions();
-        updateFrostUI(Math.min(p1Temp, p2Temp));
-
-        // 4. Win/Loss Conditions
-        if (p1Temp <= 80.0) {
-            endGame("❌ RESCUE FAILED\nPlayer A collapsed from hypothermia!", false);
-        } else if (p2Temp <= 80.0) {
-            endGame("❌ RESCUE FAILED\nPlayer B collapsed from hypothermia!", false);
-        } else if (timeLeft <= 0) {
-            endGame("🎉 RESCUE SUCCESS!\nBoth players survived by sharing warmth!", true);
-        }
+        updateUI();
     }
 
-    // Dynamic state description helper
-    function getStatusDescription(temp) {
-        if (temp >= 100) return "🔥 Feverishly hot & sweating";
-        if (temp >= 95) return "😌 Warm & comfortable";
-        if (temp >= 90) return "🌬️ Chill setting in, cold hands";
-        if (temp >= 85) return "🥶 Shivering violently, lips blue";
-        if (temp >= 82) return "⚠️ Pale, limbs losing sensation!";
-        return "🚨 Fading out of consciousness...";
-    }
-
-    function updateDescriptions() {
-        document.getElementById('p1-desc').innerText = getStatusDescription(p1Temp);
-        document.getElementById('p2-desc').innerText = getStatusDescription(p2Temp);
-
-        const msg = document.getElementById('global-status');
-        if (isTransferring) {
-            msg.innerText = "🤝 Physical contact active...";
-            msg.style.color = "#ef4444";
+    function hostParty() {
+        if (wood >= 5 && food >= 5 && med >= 5) {
+            wood -= 5; food -= 5; med -= 5;
+            mood = Math.min(100, mood + 20);
+            updateUI();
         } else {
-            msg.innerText = "❄️ Freezing wind continues...";
-            msg.style.color = "#9ca3af";
+            alert("举办聚会需要三种资源各 5 个！");
         }
     }
 
-    function updateFrostUI(lowestTemp) {
-        const overlay = document.getElementById('frost-overlay');
-        if (lowestTemp < 90) {
-            let severity = (90 - lowestTemp) * 10;
-            overlay.style.boxShadow = `inset 0 0 ${severity * 2}px rgba(0, 150, 255, ${severity/100})`;
+    function addWoodToBonfire() {
+        if (wood >= 5) {
+            wood -= 5;
+            bonfire += 5;
+            updateUI();
         } else {
-            overlay.style.boxShadow = `inset 0 0 0px rgba(0, 0, 0, 0)`;
+            alert("木头不足 5 个！");
         }
     }
 
-    function endGame(reason, isSuccess) {
-        clearInterval(gameInterval);
-        document.getElementById('game').classList.add('hidden');
-        document.getElementById('game-over').classList.remove('hidden');
+    // 助理下属交互
+    function talkToAssistant() {
+        const randQuote = dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)];
+        document.getElementById('assistant-dialogue').innerText = `"${randQuote}"`;
+    }
+
+    function interactAssistant(type) {
+        if (dailyInteractionDone) {
+            alert("今天已经进行过训斥或夸奖了！");
+            return;
+        }
+
+        if (type === 'reprimand') {
+            loyalty = Math.min(100, loyalty + 15);
+            prestige = Math.max(0, prestige - 15);
+            document.getElementById('assistant-dialogue').innerText = '"属下知错了...必定反省自己！"';
+        } else if (type === 'praise') {
+            loyalty = Math.max(0, loyalty - 15);
+            prestige = Math.min(100, prestige + 15);
+            document.getElementById('assistant-dialogue').innerText = '"感谢首领的赏识！我定当不负众望！"';
+        }
+        dailyInteractionDone = true;
+        updateUI();
+    }
+
+    // 下一天主循环
+    function nextDay() {
+        // 1. 结算小队收益
+        let prestigeBonus = (prestige / 50); // 威望高增加工作收益
+        let forestGet = Math.floor(dispatch.forest * (2 + peopleLvl) * prestigeBonus);
+        let cityGet = Math.floor(dispatch.city * (2 + peopleLvl) * prestigeBonus);
+        let hospitalGet = Math.floor(dispatch.hospital * (2 + peopleLvl) * prestigeBonus);
+
+        wood += forestGet;
+        food += cityGet;
+        med += hospitalGet;
+
+        // 2. 派遣导致的心情下降（派出去的人越多，心情下降越快）
+        let totalDispatched = dispatch.forest + dispatch.city + dispatch.hospital;
+        mood -= Math.floor(totalDispatched * 1.5);
+
+        // 3. 助理收集额外随机资源
+        const resTypes = ['wood', 'food', 'med'];
+        const assistantRes = resTypes[Math.floor(Math.random() * resTypes.length)];
+        let assistantAmount = Math.floor(5 * prestigeBonus);
+        if (assistantRes === 'wood') wood += assistantAmount;
+        if (assistantRes === 'food') food += assistantAmount;
+        if (assistantRes === 'med') med += assistantAmount;
+
+        // 4. 篝火消耗（日子越久需要越多：10, 15, 20, 25, 30）
+        let bonfireNeed = 10 + (day - 1) * 5;
+        bonfire -= bonfireNeed;
+
+        // 5. 每日固定三属性衰减
+        fullness -= 12;
+        health -= 12;
+        mood -= 10;
+
+        // 6. 如果篝火清零或负数，三属性加速衰减
+        if (bonfire <= 0) {
+            bonfire = 0;
+            fullness -= 20;
+            health -= 20;
+            mood -= 25;
+        }
+
+        // 7. 进入下一天或结算胜利
+        day++;
+        dailyInteractionDone = false;
+        dispatch = { forest: 0, city: 0, hospital: 0 };
+
+        if (day > 5) {
+            checkEndGame(true);
+            return;
+        }
+
+        // 8. 触发每日随机事件
+        let eventMsg = triggerRandomEvent();
         
-        document.getElementById('end-title').innerText = isSuccess ? "VICTORY" : "FAILURE";
-        document.getElementById('end-title').style.color = isSuccess ? "#4ade80" : "#f87171";
-        document.getElementById('end-desc').innerText = reason;
+        // 9. 检查失败结局
+        if (checkEndGame(false)) return;
+
+        // 重置对话提示
+        document.getElementById('assistant-dialogue').innerText = `"首领，这是今天助理收集到的物资（${assistantRes}: +${assistantAmount}）。请指示！"`;
+        document.getElementById('event-log').innerHTML = `<b>第 ${day} 天事件：</b>${eventMsg}`;
+
+        updateUI();
+    }
+
+    // 概率严格匹配的随机事件触发器
+    function triggerRandomEvent() {
+        let rand = Math.random() * 100;
+
+        // 好事件 (50%)
+        if (rand < 23) { mood = Math.min(100, mood + 15); return "【好事】篝火旁出现了一群前来取暖的小鹿，群众心情上升！（心情 +15）"; }
+        else if (rand < 35) { fullness = Math.min(100, fullness + 15); return "【好事】群众们一起创新菜谱，饱餐一顿。（饱食度 +15）"; }
+        else if (rand < 42) { health = Math.min(100, health + 15); return "【好事】群众们发现篝火旁长出了草药，服下后身体感觉不错。（健康度 +15）"; }
+        else if (rand < 47) { peopleLvl++; return "【好事】小队在探索中进行了学习，人员等级升级了！（等级 +1）"; }
+        else if (rand < 50) { bonfire += (10 + (day-1)*5); return "【好事】风雪变小，篝火烧得热烈，今天篝火没有产生消耗！"; }
+        
+        // 坏事件 (50%)
+        else if (rand < 73) { mood -= 15; return "【坏事】暴风雪刮了一夜，群众们感觉失去希望。（心情 -15）"; }
+        else if (rand < 85) { fullness -= 15; return "【坏事】群众们吃坏了肚子，身体十分虚弱。（饱食度 -15）"; }
+        else if (rand < 92) { health -= 15; return "【坏事】寒冷带来疾病，群众们染上了流感。（健康度 -15）"; }
+        else if (rand < 97) { bonfire = Math.floor(bonfire / 2); return "【坏事】篝火被风雪刮了一夜，存在里面的木头急剧消耗，减少了一半！"; }
+        else { bonfire = 0; return "【坏事】群众不小心踢翻了篝火！里面存的木头全部清空，请立刻补充！"; }
+    }
+
+    // 结局判定
+    function checkEndGame(isVictoryCheck) {
+        // 篡位判定：忠诚 <= 20 且 威望 >= 80
+        if (loyalty <= 20 && prestige >= 80) {
+            alert("💥【坏结局：篡位政变】\n你的助理下属威望过高而对你毫无忠诚！在一个深夜，他率领群众破门而入，剥夺了你的首领职位...");
+            location.reload();
+            return true;
+        }
+
+        // 群众崩溃判定 (任意 <= 20)
+        if (fullness <= 20 || health <= 20 || mood <= 20) {
+            alert(`💥【坏结局：组织崩溃】\n群众的生存状态跌入绝境（饱食:${fullness} | 健康:${health} | 心情:${mood}），极寒营地爆发了内乱与绝望，组织彻底解体...`);
+            location.reload();
+            return true;
+        }
+
+        // 胜利判定
+        if (isVictoryCheck) {
+            alert("🎉【真·完美胜利】\n你成功带领组织挺过了暴风雪最猛烈的 5 天！救援队终于赶到，绝大多数群众都在你的明智指挥下幸存了下来！");
+            location.reload();
+            return true;
+        }
+
+        return false;
+    }
+
+    // UI 刷新逻辑
+    function updateUI() {
+        document.getElementById('day-display').innerText = `第 ${day} 天 / 共 5 天`;
+        document.getElementById('lvl-display').innerText = `群众等级: Lv.${peopleLvl}`;
+
+        // 属性与颜色判定
+        updateStatDisplay('fullness-val', fullness);
+        updateStatDisplay('health-val', health);
+        updateStatDisplay('mood-val', mood);
+
+        document.getElementById('wood-val').innerText = wood;
+        document.getElementById('food-val').innerText = food;
+        document.getElementById('med-val').innerText = med;
+
+        let bonfireNeed = 10 + (day - 1) * 5;
+        document.getElementById('bonfire-val').innerText = bonfire;
+        document.getElementById('bonfire-need').innerText = `今日消耗需求: ${bonfireNeed} 块`;
+
+        let currentDispatched = dispatch.forest + dispatch.city + dispatch.hospital;
+        document.getElementById('idle-pop').innerText = totalPeople - currentDispatched;
+        document.getElementById('forest-count').innerText = dispatch.forest;
+        document.getElementById('city-count').innerText = dispatch.city;
+        document.getElementById('hospital-count').innerText = dispatch.hospital;
+
+        document.getElementById('loyalty-val').innerText = loyalty;
+        document.getElementById('prestige-val').innerText = prestige;
+
+        document.getElementById('btn-reprimand').disabled = dailyInteractionDone;
+        document.getElementById('btn-praise').disabled = dailyInteractionDone;
+        document.getElementById('btn-reprimand').style.opacity = dailyInteractionDone ? 0.5 : 1;
+        document.getElementById('btn-praise').style.opacity = dailyInteractionDone ? 0.5 : 1;
+    }
+
+    function updateStatDisplay(id, val) {
+        const el = document.getElementById(id);
+        el.innerText = val;
+        el.className = 'status-val ' + (val <= 30 ? 'val-danger' : val <= 50 ? 'val-warn' : 'val-good');
     }
 </script>
 
