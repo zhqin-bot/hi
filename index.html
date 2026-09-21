@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>极寒末日：五日领袖</title>
+    <title>Frost Apocalypse: 5 Days Leader</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
         body {
@@ -19,7 +19,7 @@
             position: relative;
         }
 
-        /* 5. 飘雪特效 Canvas (不挡点击) */
+        /* Snow Effect Canvas (non-blocking) */
         #snow-canvas {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -54,7 +54,7 @@
 
         .section-title { font-size: 0.85rem; font-weight: bold; color: #9ca3af; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
 
-        /* 属性条样式 */
+        /* Stats Grid */
         .status-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .status-item { background: #0f1117; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222734; position: relative; }
         .status-val { font-size: 1.1rem; font-weight: bold; margin-top: 2px; }
@@ -62,11 +62,11 @@
         .val-warn { color: #f59e0b; }
         .val-danger { color: #ef4444; }
 
-        /* 资源展示 */
+        /* Resources Bar */
         .resource-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; background: #202634; padding: 10px; border-radius: 8px; text-align: center; }
         .res-item { font-size: 0.85rem; font-weight: 500; }
 
-        /* 2. 篝火闪红光报警动画 */
+        /* Bonfire Warning Animation */
         .bonfire-box { 
             background: rgba(239, 68, 68, 0.08); 
             border: 1px solid rgba(239, 68, 68, 0.2); 
@@ -86,24 +86,24 @@
             100% { background: rgba(239, 68, 68, 0.45); box-shadow: 0 0 20px rgba(239,68,68,0.8); }
         }
 
-        /* 4. 派遣管理与预览 */
+        /* Dispatch Management & Preview */
         .dispatch-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .dispatch-card { background: #0f1117; padding: 8px; border-radius: 8px; text-align: center; border: 1px solid #222734; }
         .dispatch-controls { display: flex; justify-content: center; align-items: center; gap: 8px; margin-top: 4px; }
         .dispatch-preview { font-size: 0.7rem; color: #10b981; margin-top: 4px; font-weight: bold; min-height: 16px; }
 
-        /* 下属专区 */
+        /* Assistant Section */
         .assistant-box { background: #1a202c; border: 1px solid #2d3748; padding: 10px; border-radius: 10px; }
         .dialogue-log { background: #0f1117; padding: 8px; border-radius: 6px; font-size: 0.8rem; color: #cbd5e1; min-height: 40px; margin: 8px 0; display: flex; align-items: center; }
 
-        /* 通用按钮 */
+        /* Buttons */
         button { background: #2b3548; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: 0.2s; }
         button:active { transform: scale(0.96); }
         button.btn-primary { background: #f59e0b; color: #000; font-weight: bold; }
         button.btn-sm { padding: 2px 8px; font-size: 0.75rem; }
         button.btn-action { background: #3b82f6; width: 100%; padding: 12px; font-size: 1rem; border-radius: 10px; margin-top: 5px; }
 
-        /* 1. 每日事件独立弹窗 UI */
+        /* Modal UI */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
@@ -132,127 +132,126 @@
 </head>
 <body>
 
-<!-- 5. 飘雪特效 Canvas -->
+<!-- Snow Effect Canvas -->
 <canvas id="snow-canvas"></canvas>
 
-<!-- 1. 每日事件弹窗 -->
+<!-- Daily Event Modal -->
 <div id="event-modal" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-title" id="modal-day-title">第 1 天 · 早晨简报</div>
-        <div class="modal-desc" id="modal-event-desc">游戏开始！请谨慎分配人口与物资，带领营地存活 5 天！</div>
-        <button class="btn-primary" style="width: 100%; padding: 10px;" onclick="closeEventModal()">知道了</button>
+        <div class="modal-title" id="modal-day-title">Day 1 · Morning Briefing</div>
+        <div class="modal-desc" id="modal-event-desc">The game begins! Carefully manage your people and resources to keep the camp alive for 5 days!</div>
+        <button class="btn-primary" style="width: 100%; padding: 10px;" onclick="closeEventModal()">Understood</button>
     </div>
 </div>
 
 <div class="game-card">
-    <!-- 顶部状态 -->
+    <!-- Header Status -->
     <div class="header">
         <div>
-            <div class="day-title" id="day-display">第 1 天 / 共 5 天</div>
-            <div style="font-size: 0.75rem; color: #6b7280;">极寒末日·首领指挥部</div>
+            <div class="day-title" id="day-display">Day 1 / 5 Days</div>
+            <div style="font-size: 0.75rem; color: #6b7280;">Frost Apocalypse · Leader HQ</div>
         </div>
-        <div class="people-lvl" id="lvl-display">群众等级: Lv.1</div>
+        <div class="people-lvl" id="lvl-display">People Level: Lv.1</div>
     </div>
 
-    <!-- 群众指标 -->
+    <!-- People Stats -->
     <div>
-        <div class="section-title">群众状态 (危险值 &le; 20)</div>
+        <div class="section-title">People Status (Danger Level &le; 20)</div>
         <div class="status-grid">
             <div class="status-item">
-                <div style="font-size: 0.75rem; color: #9ca3af;">🍞 饱食度</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">🍞 Satiety</div>
                 <div class="status-val" id="fullness-val">80</div>
-                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('food')">+15 (耗10食物)</button>
+                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('food')">+15 (10 Food)</button>
             </div>
             <div class="status-item">
-                <div style="font-size: 0.75rem; color: #9ca3af;">💊 健康度</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">💊 Health</div>
                 <div class="status-val" id="health-val">80</div>
-                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('med')">+15 (耗10药品)</button>
+                <button class="btn-sm" style="margin-top:4px;" onclick="consumeRes('med')">+15 (10 Meds)</button>
             </div>
             <div class="status-item">
-                <div style="font-size: 0.75rem; color: #9ca3af;">😊 心情值</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;">😊 Morale</div>
                 <div class="status-val" id="mood-val">80</div>
-                <button class="btn-sm" style="margin-top:4px;" onclick="hostParty()">聚会 (各耗5)</button>
+                <button class="btn-sm" style="margin-top:4px;" onclick="hostParty()">Party (5 Each)</button>
             </div>
         </div>
     </div>
 
-    <!-- 资源与篝火 -->
+    <!-- Resources & Bonfire -->
     <div>
-        <div class="section-title">资源与篝火</div>
+        <div class="section-title">Resources & Bonfire</div>
         <div class="resource-bar" style="margin-bottom: 8px;">
-            <div class="res-item">🪵 木头: <span id="wood-val" style="color:#f59e0b;">30</span></div>
-            <div class="res-item">🍞 食物: <span id="food-val" style="color:#10b981;">30</span></div>
-            <div class="res-item">💊 药品: <span id="med-val" style="color:#3b82f6;">30</span></div>
+            <div class="res-item">🪵 Wood: <span id="wood-val" style="color:#f59e0b;">30</span></div>
+            <div class="res-item">🍞 Food: <span id="food-val" style="color:#10b981;">30</span></div>
+            <div class="res-item">💊 Meds: <span id="med-val" style="color:#3b82f6;">30</span></div>
         </div>
 
-        <!-- 2. 篝火UI & 警告 -->
+        <!-- Bonfire UI & Warning -->
         <div class="bonfire-box" id="bonfire-container">
             <div>
-                <div style="font-size: 0.85rem; font-weight: bold; color: #ef4444;" id="bonfire-title">🔥 中心篝火储备: <span id="bonfire-val">20</span> 块</div>
-                <div style="font-size: 0.75rem; color: #9ca3af;" id="bonfire-need">今日消耗需求: 10 块</div>
+                <div style="font-size: 0.85rem; font-weight: bold; color: #ef4444;" id="bonfire-title">🔥 Central Bonfire: <span id="bonfire-val">20</span> Wood</div>
+                <div style="font-size: 0.75rem; color: #9ca3af;" id="bonfire-need">Daily Requirement: 10 Wood</div>
             </div>
-            <button onclick="addWoodToBonfire()">添加 5 木头</button>
+            <button onclick="addWoodToBonfire()">Add 5 Wood</button>
         </div>
     </div>
 
-    <!-- 小队派遣 -->
+    <!-- Expedition Dispatch -->
     <div>
-        <div class="section-title">每日探索派遣 (闲置人口: <span id="idle-pop">10</span>/10)</div>
+        <div class="section-title">Daily Expedition (Idle People: <span id="idle-pop">10</span>/10)</div>
         <div class="dispatch-grid">
-            <!-- 森林 -->
+            <!-- Forest -->
             <div class="dispatch-card">
-                <div style="font-size: 0.8rem; font-weight: bold;">🌲 森林 (木头)</div>
+                <div style="font-size: 0.8rem; font-weight: bold;">🌲 Forest (Wood)</div>
                 <div class="dispatch-controls">
                     <button class="btn-sm" onclick="changeDispatch('forest', -1)">-</button>
                     <span id="forest-count" style="font-weight: bold;">0</span>
                     <button class="btn-sm" onclick="changeDispatch('forest', 1)">+</button>
                 </div>
-                <!-- 4. 收益预览 -->
-                <div class="dispatch-preview" id="forest-preview">+0 木头</div>
+                <div class="dispatch-preview" id="forest-preview">+0 Wood</div>
             </div>
-            <!-- 市区 -->
+            <!-- City -->
             <div class="dispatch-card">
-                <div style="font-size: 0.8rem; font-weight: bold;">🏙️ 市区 (食物)</div>
+                <div style="font-size: 0.8rem; font-weight: bold;">🏙️ City (Food)</div>
                 <div class="dispatch-controls">
                     <button class="btn-sm" onclick="changeDispatch('city', -1)">-</button>
                     <span id="city-count" style="font-weight: bold;">0</span>
                     <button class="btn-sm" onclick="changeDispatch('city', 1)">+</button>
                 </div>
-                <div class="dispatch-preview" id="city-preview">+0 食物</div>
+                <div class="dispatch-preview" id="city-preview">+0 Food</div>
             </div>
-            <!-- 医院 -->
+            <!-- Hospital -->
             <div class="dispatch-card">
-                <div style="font-size: 0.8rem; font-weight: bold;">🏥 医院 (药品)</div>
+                <div style="font-size: 0.8rem; font-weight: bold;">🏥 Hospital (Meds)</div>
                 <div class="dispatch-controls">
                     <button class="btn-sm" onclick="changeDispatch('hospital', -1)">-</button>
                     <span id="hospital-count" style="font-weight: bold;">0</span>
                     <button class="btn-sm" onclick="changeDispatch('hospital', 1)">+</button>
                 </div>
-                <div class="dispatch-preview" id="hospital-preview">+0 药品</div>
+                <div class="dispatch-preview" id="hospital-preview">+0 Meds</div>
             </div>
         </div>
     </div>
 
-    <!-- 助理下属管理 -->
+    <!-- Assistant Management -->
     <div class="assistant-box">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-size: 0.85rem; font-weight: bold; color: #60a5fa;">👤 助理下属管理</div>
-            <div style="font-size: 0.75rem; color: #9ca3af;">忠诚: <span id="loyalty-val" style="color:#10b981;">60</span> | 威望: <span id="prestige-val" style="color:#f59e0b;">50</span></div>
+            <div style="font-size: 0.85rem; font-weight: bold; color: #60a5fa;">👤 Assistant Management</div>
+            <div style="font-size: 0.75rem; color: #9ca3af;">Loyalty: <span id="loyalty-val" style="color:#10b981;">60</span> | Prestige: <span id="prestige-val" style="color:#f59e0b;">50</span></div>
         </div>
-        <div class="dialogue-log" id="assistant-dialogue">"首领，今天有什么指示？"</div>
+        <div class="dialogue-log" id="assistant-dialogue">"Leader, what are your orders for today?"</div>
         <div style="display: flex; gap: 6px;">
-            <button style="flex:1;" onclick="talkToAssistant()">召见交谈 (无限)</button>
-            <button style="flex:1;" id="btn-reprimand" onclick="interactAssistant('reprimand')">训斥 (忠↑威↓)</button>
-            <button style="flex:1;" id="btn-praise" onclick="interactAssistant('praise')">夸奖 (忠↓威↑)</button>
+            <button style="flex:1;" onclick="talkToAssistant()">Talk (Unlimited)</button>
+            <button style="flex:1;" id="btn-reprimand" onclick="interactAssistant('reprimand')">Reprimand (Loyalty↑ Prestige↓)</button>
+            <button style="flex:1;" id="btn-praise" onclick="interactAssistant('praise')">Praise (Loyalty↓ Prestige↑)</button>
         </div>
     </div>
 
-    <!-- 结算按钮 -->
-    <button class="btn-action btn-primary" onclick="nextDay()">完成本日操作，进入下一天 ➔</button>
+    <!-- Next Day Button -->
+    <button class="btn-action btn-primary" onclick="nextDay()">Finish Day & Proceed ➔</button>
 </div>
 
 <script>
-    // 游戏核心数据状态
+    // Core Game State
     let day = 1;
     let peopleLvl = 1;
 
@@ -273,22 +272,20 @@
     let dailyInteractionDone = false;
 
     const dailyQuotes = [
-        "首领，外面的风雪越来越大了，注意保暖。",
-        "大家虽然很累，但只要您还在，我们就还有希望。",
-        "今天的物资整理工作差不多了，请您过目。",
-        "有几名群众私下讨论过您，他们都很敬佩您的果断。",
-        "篝火可千万不能灭啊，那是大家唯一的支柱。"
+        "Leader, the blizzard outside is getting stronger. Please stay warm.",
+        "Everyone is exhausted, but as long as you are leading us, there is hope.",
+        "Today's inventory sorting is finished. Please review it at your convenience.",
+        "A few citizens were speaking of you earlier—they deeply admire your decisiveness.",
+        "The bonfire must never die out; it is the only thing keeping everyone sane."
     ];
 
-    // 初始化更新 UI
+    // Initialize UI
     updateUI();
 
-    // 1. 弹窗控制
     function closeEventModal() {
         document.getElementById('event-modal').classList.add('hidden');
     }
 
-    // 派遣调整与 4. 实时收益预览
     function changeDispatch(type, delta) {
         let currentTotal = dispatch.forest + dispatch.city + dispatch.hospital;
         if (delta > 0 && currentTotal >= totalPeople) return;
@@ -298,7 +295,6 @@
         updateUI();
     }
 
-    // 资源转化
     function consumeRes(type) {
         if (type === 'food' && food >= 10) {
             food -= 10; fullness = Math.min(100, fullness + 15);
@@ -314,7 +310,7 @@
             mood = Math.min(100, mood + 20);
             updateUI();
         } else {
-            alert("举办聚会需要三种资源各 5 个！");
+            alert("Hosting a party requires 5 units of each resource!");
         }
     }
 
@@ -324,11 +320,10 @@
             bonfire += 5;
             updateUI();
         } else {
-            alert("木头不足 5 个！");
+            alert("Not enough Wood (5 required)!");
         }
     }
 
-    // 助理下属交互
     function talkToAssistant() {
         const randQuote = dailyQuotes[Math.floor(Math.random() * dailyQuotes.length)];
         document.getElementById('assistant-dialogue').innerText = `"${randQuote}"`;
@@ -336,26 +331,25 @@
 
     function interactAssistant(type) {
         if (dailyInteractionDone) {
-            alert("今天已经进行过训斥或夸奖了！");
+            alert("You have already reprimanded or praised your assistant today!");
             return;
         }
 
         if (type === 'reprimand') {
             loyalty = Math.min(100, loyalty + 15);
             prestige = Math.max(0, prestige - 15);
-            document.getElementById('assistant-dialogue').innerText = '"属下知错了...必定反省自己！"';
+            document.getElementById('assistant-dialogue').innerText = '"I am deeply sorry, Leader... I shall reflect on my mistakes!"';
         } else if (type === 'praise') {
             loyalty = Math.max(0, loyalty - 15);
             prestige = Math.min(100, prestige + 15);
-            document.getElementById('assistant-dialogue').innerText = '"感谢首领的赏识！我定当不负众望！"';
+            document.getElementById('assistant-dialogue').innerText = '"Thank you for your trust, Leader! I won\'t let you down!"';
         }
         dailyInteractionDone = true;
         updateUI();
     }
 
-    // 下一天主循环
     function nextDay() {
-        // 1. 结算小队收益
+        // 1. Calculate Expedition Yield
         let prestigeBonus = (prestige / 50);
         let forestGet = Math.floor(dispatch.forest * (2 + peopleLvl) * prestigeBonus);
         let cityGet = Math.floor(dispatch.city * (2 + peopleLvl) * prestigeBonus);
@@ -365,11 +359,11 @@
         food += cityGet;
         med += hospitalGet;
 
-        // 2. 派遣导致的心情下降
+        // 2. Morale Penalty for Dispatching
         let totalDispatched = dispatch.forest + dispatch.city + dispatch.hospital;
         mood -= Math.floor(totalDispatched * 1.5);
 
-        // 3. 助理收集额外随机资源 & 助理威望每天固定 +5 (新增修改3)
+        // 3. Assistant Resource Collection & Passive Prestige Increase (+5 daily)
         prestige = Math.min(100, prestige + 5); 
 
         const resTypes = ['wood', 'food', 'med'];
@@ -379,16 +373,16 @@
         if (assistantRes === 'food') food += assistantAmount;
         if (assistantRes === 'med') med += assistantAmount;
 
-        // 4. 篝火消耗
+        // 4. Bonfire Consumption
         let bonfireNeed = 10 + (day - 1) * 5;
         bonfire -= bonfireNeed;
 
-        // 5. 每日固定三属性衰减
+        // 5. Daily Natural Decay
         fullness -= 12;
         health -= 12;
         mood -= 10;
 
-        // 6. 篝火为0时加速暴跌
+        // 6. Extinguished Bonfire Penalty
         if (bonfire <= 0) {
             bonfire = 0;
             fullness -= 20;
@@ -396,7 +390,7 @@
             mood -= 25;
         }
 
-        // 7. 进入下一天或结算
+        // 7. Advance Day or Game End
         day++;
         dailyInteractionDone = false;
         dispatch = { forest: 0, city: 0, hospital: 0 };
@@ -406,16 +400,16 @@
             return;
         }
 
-        // 8. 触发每日随机事件并弹出窗口 (修改1)
+        // 8. Trigger Random Event
         let eventMsg = triggerRandomEvent();
-        document.getElementById('modal-day-title').innerText = `第 ${day} 天 · 早晨简报`;
+        document.getElementById('modal-day-title').innerText = `Day ${day} · Morning Briefing`;
         document.getElementById('modal-event-desc').innerHTML = eventMsg;
         document.getElementById('event-modal').classList.remove('hidden');
         
-        // 9. 检查失败结局
+        // 9. Check Loss Conditions
         if (checkEndGame(false)) return;
 
-        document.getElementById('assistant-dialogue').innerText = `"首领，这是今天助理收集到的物资（${assistantRes}: +${assistantAmount}）。请指示！"`;
+        document.getElementById('assistant-dialogue').innerText = `"Leader, here are the resources I gathered today (${assistantRes.toUpperCase()}: +${assistantAmount}). Awaiting your orders!"`;
 
         updateUI();
     }
@@ -423,34 +417,34 @@
     function triggerRandomEvent() {
         let rand = Math.random() * 100;
 
-        if (rand < 23) { mood = Math.min(100, mood + 15); return "<b>【好消息】</b>篝火旁出现了一群前来取暖的小鹿，群众心情大好！<br><br><span style='color:#10b981;'>群众心情 +15</span>"; }
-        else if (rand < 35) { fullness = Math.min(100, fullness + 15); return "<b>【好消息】</b>群众们一起创新菜谱，饱餐了一顿。<br><br><span style='color:#10b981;'>群众饱食度 +15</span>"; }
-        else if (rand < 42) { health = Math.min(100, health + 15); return "<b>【好消息】</b>群众们发现篝火旁长出了草药，服下后身体感觉不错。<br><br><span style='color:#10b981;'>群众健康度 +15</span>"; }
-        else if (rand < 47) { peopleLvl++; return "<b>【好消息】</b>小队在探索中进行了经验总结，人员等级提升了！<br><br><span style='color:#10b981;'>群众等级 +1</span>"; }
-        else if (rand < 50) { bonfire += (10 + (day-1)*5); return "<b>【好消息】</b>风雪变小，篝火烧得极为热烈，今天没有产生木头消耗！"; }
+        if (rand < 23) { mood = Math.min(100, mood + 15); return "<b>【Good Event】</b>A herd of deer gathered near the bonfire for warmth. The people's spirits are lifted!<br><br><span style='color:#10b981;'>Morale +15</span>"; }
+        else if (rand < 35) { fullness = Math.min(100, fullness + 15); return "<b>【Good Event】</b>The citizens created a new recipe and enjoyed a hearty feast together.<br><br><span style='color:#10b981;'>Satiety +15</span>"; }
+        else if (rand < 42) { health = Math.min(100, health + 15); return "<b>【Good Event】</b>Herbs were discovered growing near the fire. Taking them improved everyone's health.<br><br><span style='color:#10b981;'>Health +15</span>"; }
+        else if (rand < 47) { peopleLvl++; return "<b>【Good Event】</b>The team learned valuable lessons during exploration, increasing their overall skill level!<br><br><span style='color:#10b981;'>People Level +1</span>"; }
+        else if (rand < 50) { bonfire += (10 + (day-1)*5); return "<b>【Good Event】</b>The winds calmed down and the bonfire burned brightly—no wood was consumed today!"; }
         
-        else if (rand < 73) { mood -= 15; return "<b>【坏消息】</b>暴风雪刮了一夜，群众们感到绝望。<br><br><span style='color:#ef4444;'>群众心情 -15</span>"; }
-        else if (rand < 85) { fullness -= 15; return "<b>【坏消息】</b>群众们吃坏了肚子，身体十分虚弱。<br><br><span style='color:#ef4444;'>群众饱食度 -15</span>"; }
-        else if (rand < 92) { health -= 15; return "<b>【坏消息】</b>寒冷带来流感，不少群众染上了疾病。<br><br><span style='color:#ef4444;'>群众健康度 -15</span>"; }
-        else if (rand < 97) { bonfire = Math.floor(bonfire / 2); return "<b>【坏消息】</b>狂风将篝火中的木头大量吹飞，存量急剧减少！<br><br><span style='color:#ef4444;'>篝火木头减少一半</span>"; }
-        else { bonfire = 0; return "<b>【灾难】</b>群众不小心踢翻了篝火！存量木头全部清空，请立刻补充！<br><br><span style='color:#ef4444;'>篝火存量归 0！</span>"; }
+        else if (rand < 73) { mood -= 15; return "<b>【Bad Event】</b>A harsh blizzard raged all night, causing despair among the citizens.<br><br><span style='color:#ef4444;'>Morale -15</span>"; }
+        else if (rand < 85) { fullness -= 15; return "<b>【Bad Event】</b>Spoiled food caused severe stomach issues among the people.<br><br><span style='color:#ef4444;'>Satiety -15</span>"; }
+        else if (rand < 92) { health -= 15; return "<b>【Bad Event】</b>Freezing cold brought a surge of severe flu across the shelter.<br><br><span style='color:#ef4444;'>Health -15</span>"; }
+        else if (rand < 97) { bonfire = Math.floor(bonfire / 2); return "<b>【Bad Event】</b>Violent gales blew away a massive amount of wood stored in the fire pit!<br><br><span style='color:#ef4444;'>Bonfire Wood Halved</span>"; }
+        else { bonfire = 0; return "<b>【Disaster】</b>A citizen accidentally knocked over the bonfire structure! All stored wood was lost. Replenish immediately!<br><br><span style='color:#ef4444;'>Bonfire Empty (0 Wood)!</span>"; }
     }
 
     function checkEndGame(isVictoryCheck) {
         if (loyalty <= 20 && prestige >= 80) {
-            alert("💥【坏结局：篡位政变】\n你的助理下属威望过高而对你毫无忠诚！在一个深夜，他率领群众破门而入，剥夺了你的首领职位...");
+            alert("💥【BAD ENDING: COUP D'ÉTAT】\nYour assistant gained immense prestige while holding zero loyalty toward you! Late at night, he led a mutiny and ousted you from leadership...");
             location.reload();
             return true;
         }
 
         if (fullness <= 20 || health <= 20 || mood <= 20) {
-            alert(`💥【坏结局：组织崩溃】\n群众的生存状态跌入绝境（饱食:${fullness} | 健康:${health} | 心情:${mood}），极寒营地爆发了内乱，组织彻底解体...`);
+            alert(`💥【BAD ENDING: CAMP COLLAPSE】\nThe citizens' condition plummeted to critical levels (Satiety:${fullness} | Health:${health} | Morale:${mood}). Despair sparked riots, completely destroying the shelter...`);
             location.reload();
             return true;
         }
 
         if (isVictoryCheck) {
-            alert("🎉【真·完美胜利】\n你成功带领组织挺过了暴风雪最猛烈的 5 天！救援队赶到，绝大多数群众都在你的明智指挥下幸存了下来！");
+            alert("🎉【VICTORY: SURVIVED THE FROST】\nYou successfully led the camp through 5 terrible days of severe blizzard! Rescue teams arrived, and most citizens survived under your wise leadership!");
             location.reload();
             return true;
         }
@@ -458,10 +452,9 @@
         return false;
     }
 
-    // UI 刷新逻辑
     function updateUI() {
-        document.getElementById('day-display').innerText = `第 ${day} 天 / 共 5 天`;
-        document.getElementById('lvl-display').innerText = `群众等级: Lv.${peopleLvl}`;
+        document.getElementById('day-display').innerText = `Day ${day} / 5 Days`;
+        document.getElementById('lvl-display').innerText = `People Level: Lv.${peopleLvl}`;
 
         updateStatDisplay('fullness-val', fullness);
         updateStatDisplay('health-val', health);
@@ -473,28 +466,26 @@
 
         let bonfireNeed = 10 + (day - 1) * 5;
         document.getElementById('bonfire-val').innerText = bonfire;
-        document.getElementById('bonfire-need').innerText = `今日消耗需求: ${bonfireNeed} 块`;
+        document.getElementById('bonfire-need').innerText = `Daily Requirement: ${bonfireNeed} Wood`;
 
-        // 2. 篝火闪红光 UI 判断
         const bonfireBox = document.getElementById('bonfire-container');
         const bonfireTitle = document.getElementById('bonfire-title');
         if (bonfire <= 0) {
             bonfireBox.classList.add('bonfire-danger');
-            bonfireTitle.innerText = "🚨 篝火已熄灭！物资正在暴跌！";
+            bonfireTitle.innerText = "🚨 BONFIRE EXTINGUISHED! STATS DROPPING FAST!";
         } else {
             bonfireBox.classList.remove('bonfire-danger');
-            bonfireTitle.innerHTML = `🔥 中心篝火储备: <span id="bonfire-val">${bonfire}</span> 块`;
+            bonfireTitle.innerHTML = `🔥 Central Bonfire: <span id="bonfire-val">${bonfire}</span> Wood`;
         }
 
-        // 4. 派遣收益实时预览更新
         let prestigeBonus = (prestige / 50);
         let forestGet = Math.floor(dispatch.forest * (2 + peopleLvl) * prestigeBonus);
         let cityGet = Math.floor(dispatch.city * (2 + peopleLvl) * prestigeBonus);
         let hospitalGet = Math.floor(dispatch.hospital * (2 + peopleLvl) * prestigeBonus);
 
-        document.getElementById('forest-preview').innerText = `+${forestGet} 木头`;
-        document.getElementById('city-preview').innerText = `+${cityGet} 食物`;
-        document.getElementById('hospital-preview').innerText = `+${hospitalGet} 药品`;
+        document.getElementById('forest-preview').innerText = `+${forestGet} Wood`;
+        document.getElementById('city-preview').innerText = `+${cityGet} Food`;
+        document.getElementById('hospital-preview').innerText = `+${hospitalGet} Meds`;
 
         let currentDispatched = dispatch.forest + dispatch.city + dispatch.hospital;
         document.getElementById('idle-pop').innerText = totalPeople - currentDispatched;
@@ -517,7 +508,7 @@
         el.className = 'status-val ' + (val <= 30 ? 'val-danger' : val <= 50 ? 'val-warn' : 'val-good');
     }
 
-    // 5. 飘雪动画 Canvas 实现
+    // Snow Canvas Animation
     (function initSnow() {
         const canvas = document.getElementById('snow-canvas');
         const ctx = canvas.getContext('2d');
